@@ -11,6 +11,14 @@
  *   logs     {"source": "paytpv", "lines": 200}: últimas líneas de los registros de WooCommerce cuyo nombre
  *            contiene source (también fatal-errors), para ver qué respondió la pasarela.
  * También lista las pasarelas de pago activas.
+ *
+ *   POST /wp-json/eg/v1/gateways   ajustes de las pasarelas de pago (WooCommerce > Ajustes > Pagos).
+ *   {}                                    lista todas las pasarelas cargadas con sus ajustes; las claves, contraseñas
+ *                                         y secretos salen tapados (solo los 4 últimos caracteres).
+ *   {"id": "redsys", "set": {...}}        cambia esos ajustes de la pasarela (se fusionan con los que tiene) y
+ *                                         devuelve antes y después; solo guarda con "apply": true. Vale también
+ *                                         para pasarelas de un plugin aún inactivo si ya tienen ajustes guardados.
+ *   {"order": ["redsys", "bacs"]}         orden en que se muestran en la página de pago (con apply: true).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 add_filter( 'eg_pub_modules', function ( $modules ) {
-	$modules['pedidos'] = array( 'type' => 'woocommerce', 'routes' => array( 'orders' ) );
+	$modules['pedidos'] = array( 'type' => 'woocommerce', 'routes' => array( 'orders', 'gateways' ) );
 	return $modules;
 } );
 
@@ -29,6 +37,11 @@ add_action( 'rest_api_init', function () {
 	register_rest_route( 'eg/v1', '/orders', array(
 		'methods'             => 'POST',
 		'callback'            => 'eg_pub_orders_handle',
+		'permission_callback' => eg_pub_module_permission( 'manage_woocommerce' ),
+	) );
+	register_rest_route( 'eg/v1', '/gateways', array(
+		'methods'             => 'POST',
+		'callback'            => 'eg_pub_gateways_handle',
 		'permission_callback' => eg_pub_module_permission( 'manage_woocommerce' ),
 	) );
 } );
@@ -156,4 +169,84 @@ function eg_pub_orders_handle( WP_REST_Request $r ) {
 		$out['logs'] = eg_pub_orders_logs( (string) ( $p['logs']['source'] ?? '' ), min( 1000, max( 10, (int) ( $p['logs']['lines'] ?? 200 ) ) ) );
 	}
 	return new WP_REST_Response( $out, 200 );
+}
+
+/** Tapa los ajustes que parecen secretos (claves de firma, contraseñas, tokens). */
+function eg_pub_gateways_mask( array $settings ) {
+	foreach ( $settings as $k => $v ) {
+		if ( is_scalar( $v ) && '' !== (string) $v && preg_match( '/clave|key|secret|password|pass|token|signature|firma/i', (string) $k ) ) {
+			$settings[ $k ] = '••••' . substr( (string) $v, -4 );
+		}
+	}
+	return $settings;
+}
+
+function eg_pub_gateways_handle( WP_REST_Request $r ) {
+	if ( ! function_exists( 'WC' ) ) {
+		return eg_pub_error( 'eg_wc', 'WooCommerce no está activo en esta web.' );
+	}
+	$p      = $r->get_params();
+	$apply  = ! empty( $p['apply'] );
+	$loaded = WC()->payment_gateways() ? WC()->payment_gateways()->payment_gateways() : array();
+
+	if ( ! empty( $p['id'] ) && isset( $p['set'] ) ) {
+		$id  = sanitize_key( $p['id'] );
+		$opt = 'woocommerce_' . $id . '_settings';
+		$old = get_option( $opt, null );
+		if ( ! isset( $loaded[ $id ] ) && ! is_array( $old ) ) {
+			return eg_pub_error( 'eg_gateway', 'No hay ninguna pasarela «' . $id . '» cargada ni con ajustes guardados.' );
+		}
+		$old     = is_array( $old ) ? $old : array();
+		$allowed = isset( $loaded[ $id ] ) ? array_keys( (array) $loaded[ $id ]->get_form_fields() ) : array_keys( $old );
+		$new     = $old;
+		$skipped = array();
+		foreach ( (array) $p['set'] as $k => $v ) {
+			$k = (string) $k;
+			if ( ! in_array( $k, $allowed, true ) || ! is_scalar( $v ) ) {
+				$skipped[] = $k;
+				continue;
+			}
+			$new[ $k ] = is_bool( $v ) ? ( $v ? 'yes' : 'no' ) : trim( (string) $v );
+		}
+		if ( $apply ) {
+			update_option( $opt, $new );
+		}
+		return new WP_REST_Response( array(
+			'ok'      => true,
+			'applied' => $apply,
+			'id'      => $id,
+			'loaded'  => isset( $loaded[ $id ] ),
+			'skipped' => $skipped,
+			'before'  => eg_pub_gateways_mask( $old ),
+			'after'   => eg_pub_gateways_mask( $new ),
+		), 200 );
+	}
+
+	if ( ! empty( $p['order'] ) ) {
+		$order = array();
+		foreach ( array_values( array_map( 'sanitize_key', (array) $p['order'] ) ) as $i => $id ) {
+			$order[ $id ] = $i;
+		}
+		$current = (array) get_option( 'woocommerce_gateway_order', array() );
+		$n       = count( $order );
+		foreach ( $current as $id => $pos ) {
+			if ( ! isset( $order[ $id ] ) ) {
+				$order[ $id ] = $n++;
+			}
+		}
+		if ( $apply ) {
+			update_option( 'woocommerce_gateway_order', $order );
+		}
+		return new WP_REST_Response( array( 'ok' => true, 'applied' => $apply, 'order' => $order ), 200 );
+	}
+
+	$out = array();
+	foreach ( $loaded as $id => $gw ) {
+		$out[ $id ] = array(
+			'enabled'  => 'yes' === $gw->enabled,
+			'title'    => $gw->get_title(),
+			'settings' => eg_pub_gateways_mask( (array) get_option( 'woocommerce_' . $id . '_settings', array() ) ),
+		);
+	}
+	return new WP_REST_Response( array( 'ok' => true, 'gateways' => $out, 'order' => get_option( 'woocommerce_gateway_order', array() ) ), 200 );
 }

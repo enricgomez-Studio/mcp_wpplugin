@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.107.0 · 16/11/2026 · PR (Claude, a petición de Enric)
+
+- Nuevo `/localize-media` (módulo Medios externos, tipología Gestión de la web): copia a esta web las imágenes e iconos que se siguen cargando desde otro dominio (misma ruta en uploads, alta en Medios de los originales) y cambia las URLs en contenido, metadatos de Elementor y opciones. Por tandas (`limit`) hasta `pending: 0`.
+- Webs: test-neptunoapartments.com.egserver.cloud (clon de hotelneptuno.com: separar las imágenes de las dos webs).
+
 ## 2.106.0 · 16/11/2026 · PR (Claude, a petición de Enric)
 
 - `/gateways` (módulo Pedidos, tipología WooCommerce): ver y cambiar los ajustes de las pasarelas de pago (p. ej. Redsys: entorno, FUC, terminal, clave) y su orden en la página de pago. Las claves salen tapadas; solo guarda con `apply: true`. Sirve también para una pasarela de un plugin inactivo que ya tenga ajustes guardados.

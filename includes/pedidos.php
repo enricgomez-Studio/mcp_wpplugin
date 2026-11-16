@@ -44,7 +44,8 @@ function eg_pub_orders_gateway_meta( WC_Order $order ) {
 	$out = array();
 	foreach ( $order->get_meta_data() as $meta ) {
 		$key = (string) $meta->key;
-		if ( ! preg_match( '/paytpv|paycomet|redsys|ds_|stripe|paypal|bizum|error|response|result|status|auth|transaction/i', $key ) ) {
+		// Fuera tokens e identificadores de tarjeta o de usuario en la pasarela: no hacen falta para diagnosticar.
+		if ( ! preg_match( '/paytpv|paycomet|redsys|ds_|stripe|paypal|bizum|error|response|result|status|auth|transaction/i', $key ) || preg_match( '/token|iduser|id_user|card|pan|secret/i', $key ) ) {
 			continue;
 		}
 		$value       = is_scalar( $meta->value ) ? (string) $meta->value : wp_json_encode( $meta->value );

@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.105.0 · 16/11/2026 · PR (Claude)
+
+- `/rocket`: nuevo interruptor `manual_preload` (precarga de la caché) y nuevo parámetro `lifespan_hours` (1-48) para la vida de la caché; la vista sin parámetros muestra `lifespan` (intervalo y unidad). No admite 0: una caché que no caduca deja nonces y tokens de formularios caducados en el HTML.
+- Webs: clubdelviatger.cat (formularios Formidable fallaban con caché sin caducidad).
+
 ## 2.104.1 · 16/11/2026 · PR (Claude)
 
 - `/orders`: los campos de la pasarela ya no incluyen tokens ni identificadores de tarjeta o de usuario (p. ej. `PayTPV_TokenUser`, `PayTPV_IdUser`).

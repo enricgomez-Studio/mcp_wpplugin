@@ -8,6 +8,8 @@
  *   set            {"async_css": 0, "lazyload_iframes": 1}  interruptores (0/1)
  *   elementor      {"css_print_method": "internal", "font_icon_svg": "active"}  ajustes de rendimiento de Elementor
  *                  (ver EG_PUB_ELEMENTOR_PERF); al guardar se rehace el CSS de Elementor
+ *   lifespan_hours entero 1-48: vida de la caché de WP Rocket en horas (purge_cron_interval). Con más de 12 h
+ *                  los nonces del HTML cacheado (formularios, buscadores) pueden caducar antes que la página.
  *   clear          true vacía la caché de WP Rocket como su botón «Vaciar caché» y purga toda la caché de
  *                  Cloudflare con los datos del complemento de WP Rocket (si está activo y configurado)
  * Como /seo y /term, por defecto solo previsualiza; apply:true guarda y vacía la caché de WP Rocket.
@@ -18,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const EG_PUB_ROCKET_LISTS    = array( 'exclude_lazyload', 'cache_reject_uri', 'cache_reject_cookies', 'exclude_css', 'exclude_js', 'exclude_defer_js', 'delay_js_exclusions' );
-const EG_PUB_ROCKET_SWITCHES = array( 'lazyload', 'lazyload_iframes', 'lazyload_css_bg_img', 'remove_unused_css', 'async_css', 'delay_js', 'defer_all_js', 'minify_css', 'minify_js', 'image_dimensions', 'cache_mobile', 'do_caching_mobile_files' );
+const EG_PUB_ROCKET_SWITCHES = array( 'lazyload', 'lazyload_iframes', 'lazyload_css_bg_img', 'remove_unused_css', 'async_css', 'delay_js', 'defer_all_js', 'minify_css', 'minify_js', 'image_dimensions', 'cache_mobile', 'do_caching_mobile_files', 'manual_preload' );
 
 // Ajustes de rendimiento de Elementor: clave de /rocket => array( opción de WordPress, valores admitidos ).
 const EG_PUB_ELEMENTOR_PERF = array(
@@ -53,6 +55,10 @@ function eg_pub_rocket_view( $opts ) {
 			$view[ $key ] = $opts[ $key ];
 		}
 	}
+	$view['lifespan'] = array(
+		'interval' => (int) ( $opts['purge_cron_interval'] ?? 0 ),
+		'unit'     => (string) ( $opts['purge_cron_unit'] ?? '' ),
+	);
 	$email           = (string) ( $opts['consumer_email'] ?? '' );
 	$view['license'] = array(
 		'email' => $email,
@@ -125,6 +131,15 @@ function eg_pub_rocket_handle( WP_REST_Request $r ) {
 		$new[ $key ] = $value ? 1 : 0;
 	}
 
+	if ( isset( $p['lifespan_hours'] ) ) {
+		$hours = (int) $p['lifespan_hours'];
+		if ( $hours < 1 || $hours > 48 ) {
+			return eg_pub_error( 'eg_rocket_value', 'lifespan_hours debe estar entre 1 y 48 (0, caché sin caducidad, no se admite).' );
+		}
+		$new['purge_cron_interval'] = $hours;
+		$new['purge_cron_unit']     = 'HOUR_IN_SECONDS';
+	}
+
 	$elementor = array();
 	foreach ( (array) ( $p['elementor'] ?? array() ) as $key => $value ) {
 		if ( ! isset( EG_PUB_ELEMENTOR_PERF[ $key ] ) ) {
@@ -144,7 +159,7 @@ function eg_pub_rocket_handle( WP_REST_Request $r ) {
 			$changes[ 'elementor.' . $key ] = array( 'before' => $before, 'after' => $value );
 		}
 	}
-	foreach ( array_merge( EG_PUB_ROCKET_LISTS, EG_PUB_ROCKET_SWITCHES ) as $key ) {
+	foreach ( array_merge( EG_PUB_ROCKET_LISTS, EG_PUB_ROCKET_SWITCHES, array( 'purge_cron_interval', 'purge_cron_unit' ) ) as $key ) {
 		$before = $opts[ $key ] ?? null;
 		$after  = $new[ $key ] ?? null;
 		if ( $before !== $after ) {

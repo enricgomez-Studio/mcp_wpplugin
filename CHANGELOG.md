@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.104.0 · 16/11/2026 · PR (Claude, a petición de Enric)
+
+- `/orders` (módulo nuevo «Pedidos», tipología WooCommerce): diagnóstico de pedidos de solo lectura y sin datos personales (ni nombre, email, teléfono, dirección ni IP; en notas y registros se tapan emails y tarjetas). Estado, fechas, total, pasarela, transacción, productos, notas del pedido y campos de la pasarela; con `logs` también las últimas líneas de los registros de WooCommerce de una fuente (p. ej. la pasarela) y de `fatal-errors`.
+- Webs: dulcelucca.com (dos pedidos fallidos al abrir la campaña). En las demás no cambia nada hasta que se use.
+
 ## 2.103.0 · 14/11/2026 · PR (Claude, a petición de Enric)
 
 - `/media`: nueva opción por imagen `skip_imagify: true`. Imagify no optimiza automáticamente esa subida, para imágenes que ya vienen optimizadas y que una segunda compresión pixela (banners con texto). La respuesta trae `imagify: "skipped"`.

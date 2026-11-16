@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.107.1 · 16/11/2026 · PR (Claude)
+
+- `/localize-media`: también apunta a esta web los ficheros de plugins y temas del origen que existan aquí (p. ej. el placeholder de Elementor guardado con la URL del hotel) y devuelve `residual` con lo que aún nombre `<source>/wp-content` para revisarlo a mano.
+- Webs: test-neptunoapartments.com.egserver.cloud.
+
 ## 2.107.0 · 16/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo `/localize-media` (módulo Medios externos, tipología Gestión de la web): copia a esta web las imágenes e iconos que se siguen cargando desde otro dominio (misma ruta en uploads, alta en Medios de los originales) y cambia las URLs en contenido, metadatos de Elementor y opciones. Por tandas (`limit`) hasta `pending: 0`.

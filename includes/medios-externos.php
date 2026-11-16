@@ -40,6 +40,13 @@ function eg_pub_localize_regex( $host ) {
 	return '#https?:' . $s . '{2}(?:www\.)?' . $h . $s . 'wp-content' . $s . 'uploads((?:' . $s . '[A-Za-z0-9._%~+\-]+)+?\.(?:jpe?g|png|gif|webp|avif|svg|mp4|webm|pdf))(?![A-Za-z0-9])#i';
 }
 
+/** URLs de ficheros de plugins o temas del origen (p. ej. el placeholder de Elementor); grupo 1 = plugins|themes, 2 = ruta. */
+function eg_pub_localize_asset_regex( $host ) {
+	$s = '(?:\\\\?/)';
+	$h = preg_quote( $host, '#' );
+	return '#https?:' . $s . '{2}(?:www\.)?' . $h . $s . 'wp-content' . $s . '(plugins|themes)((?:' . $s . '[A-Za-z0-9._%~+\-]+)+?\.(?:jpe?g|png|gif|webp|avif|svg|css|js|woff2?|ttf|mp4))(?![A-Za-z0-9])#i';
+}
+
 /** Ruta relativa limpia (/2024/05/foto.jpg) a partir del grupo capturado; null si no es segura. */
 function eg_pub_localize_path( $raw ) {
 	$p = str_replace( '\\/', '/', $raw );
@@ -141,7 +148,8 @@ function eg_pub_localize_handle( WP_REST_Request $r ) {
 	$apply   = rest_sanitize_boolean( $r->get_param( 'apply' ) );
 	$limit   = max( 1, min( 60, (int) ( $r->get_param( 'limit' ) ?: 25 ) ) );
 	$re      = eg_pub_localize_regex( $host );
-	$like    = '%' . $wpdb->esc_like( $host ) . '%uploads%';
+	$like    = '%' . $wpdb->esc_like( $host ) . '%wp-content%';
+	$are     = eg_pub_localize_asset_regex( $host );
 	$uploads = wp_upload_dir();
 	$base    = $uploads['basedir'];
 	$baseurl = $uploads['baseurl'];
@@ -225,7 +233,16 @@ function eg_pub_localize_handle( WP_REST_Request $r ) {
 	}
 
 	// 3. Cambiar las URLs de lo que ya está aquí, manteniendo el escape.
-	$swap = function ( $text ) use ( $re, $ready, $baseurl ) {
+	$swap = function ( $text ) use ( $re, $are, $ready, $baseurl ) {
+		// Ficheros de plugins y temas: si existen aquí en la misma ruta, se apunta a los de esta web (no se copian).
+		$text = preg_replace_callback( $are, function ( $m ) {
+			$p = eg_pub_localize_path( $m[2] );
+			if ( ! $p || ! file_exists( WP_CONTENT_DIR . '/' . strtolower( $m[1] ) . rawurldecode( $p ) ) ) {
+				return $m[0];
+			}
+			$url = content_url( strtolower( $m[1] ) . $p );
+			return ( false !== strpos( $m[0], '\\/' ) ) ? str_replace( '/', '\\/', $url ) : $url;
+		}, $text );
 		return preg_replace_callback( $re, function ( $m ) use ( $ready, $baseurl ) {
 			$p = eg_pub_localize_path( $m[1] );
 			if ( ! $p || empty( $ready[ $p ] ) ) {
@@ -276,6 +293,19 @@ function eg_pub_localize_handle( WP_REST_Request $r ) {
 		wp_cache_delete( 'alloptions', 'options' );
 	}
 
+	// Lo que sigue apuntando al origen dentro de wp-content (para revisarlo a mano).
+	$residual = array();
+	$needle   = '#' . preg_quote( $host, '#' ) . '(?:\\\\?/)wp-content#i';
+	foreach ( array( 'posts' => $posts, 'meta' => $metas ) as $kind => $rows ) {
+		foreach ( $rows as $row ) {
+			$id   = 'posts' === $kind ? $row->ID : $row->post_id;
+			$text = 'posts' === $kind ? $wpdb->get_var( $wpdb->prepare( "SELECT post_content FROM {$wpdb->posts} WHERE ID = %d", $id ) ) : $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE meta_id = %d", $row->meta_id ) );
+			if ( count( $residual ) < 15 && preg_match( $needle, (string) $text, $mm, PREG_OFFSET_CAPTURE ) ) {
+				$residual[] = array( 'where' => $kind, 'id' => (int) $id, 'text' => substr( $text, max( 0, $mm[0][1] - 20 ), 160 ) );
+			}
+		}
+	}
+
 	// 4. Cachés.
 	foreach ( array_keys( $touched ) as $id ) {
 		delete_post_meta( $id, '_elementor_css' );
@@ -294,6 +324,7 @@ function eg_pub_localize_handle( WP_REST_Request $r ) {
 	$out['failed_before'] = array_values( array_intersect( $before, $missing ) );
 	$out['pending']     = count( $pending );
 	$out['changed']     = $changed;
+	$out['residual']    = $residual;
 	$out['next']        = $pending ? 'Repetir con apply:true para copiar los siguientes ' . min( $limit, count( $pending ) ) . '.' : ( $failed ? 'Quedan fallidos: revisar si existen en el origen.' : 'Hecho.' );
 	return rest_ensure_response( $out );
 }

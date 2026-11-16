@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.106.0 · 16/11/2026 · PR (Claude, a petición de Enric)
+
+- `/gateways` (módulo Pedidos, tipología WooCommerce): ver y cambiar los ajustes de las pasarelas de pago (p. ej. Redsys: entorno, FUC, terminal, clave) y su orden en la página de pago. Las claves salen tapadas; solo guarda con `apply: true`. Sirve también para una pasarela de un plugin inactivo que ya tenga ajustes guardados.
+- Webs: oidfa-spain.org (TPV de pruebas de Getnet/Redsys).
+
 ## 2.105.0 · 16/11/2026 · PR (Claude)
 
 - `/rocket`: nuevo interruptor `manual_preload` (precarga de la caché) y nuevo parámetro `lifespan_hours` (1-48) para la vida de la caché; la vista sin parámetros muestra `lifespan` (intervalo y unidad). No admite 0: una caché que no caduca deja nonces y tokens de formularios caducados en el HTML.

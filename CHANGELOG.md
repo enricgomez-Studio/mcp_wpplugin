@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.104.1 · 16/11/2026 · PR (Claude)
+
+- `/orders`: los campos de la pasarela ya no incluyen tokens ni identificadores de tarjeta o de usuario (p. ej. `PayTPV_TokenUser`, `PayTPV_IdUser`).
+- Webs: dulcelucca.com.
+
 ## 2.104.0 · 16/11/2026 · PR (Claude, a petición de Enric)
 
 - `/orders` (módulo nuevo «Pedidos», tipología WooCommerce): diagnóstico de pedidos de solo lectura y sin datos personales (ni nombre, email, teléfono, dirección ni IP; en notas y registros se tapan emails y tarjetas). Estado, fechas, total, pasarela, transacción, productos, notas del pedido y campos de la pasarela; con `logs` también las últimas líneas de los registros de WooCommerce de una fuente (p. ej. la pasarela) y de `fatal-errors`.

@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.110.0 · 17/11/2026 · PR (Claude, a petición de Enric)
+
+- Se retira el módulo provisional de banner de cookies (`includes/cookies.php`, 2.99.0): el banner, el Consent Mode v2 y `POST /cookies` los da ahora el plugin propio EG Cookies. La opción `eg_pub_cookies` se queda en la base de datos (EG Cookies la copió al activarse) y no se borra nada.
+- `/plugins`: EG Cookies se instala desde su repositorio en la organización del estudio, `enricgomez-Studio/eg-cookies`.
+- Webs: sonovet.net (única que usaba el módulo; ya tiene EG Cookies 1.0.x). En las demás no cambia nada.
+
 ## 2.109.0 · 17/11/2026 · PR (Claude, a petición de Enric)
 
 - `/product` (WooCommerce): `recount_ratings` recalcula la valoración media, el recuento por estrellas y el número de reseñas a partir de las reseñas aprobadas, como hace WooCommerce al aprobar una reseña. Acepta IDs o SKU, o `true` para todos los productos con reseñas. Por defecto solo compara lo guardado con lo calculado; `apply: true` lo guarda y purga la caché del producto.

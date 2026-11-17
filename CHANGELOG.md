@@ -1,6 +1,6 @@
 # Registro de cambios de EG Publicación
 
-Historial del plugin EG Publicación, de lo más nuevo a lo más antiguo. Es el registro común de los cambios del repositorio: antes de cambiar o decidir nada sobre el plugin, léelo junto con la [última release](https://github.com/enricgomez/mcp_wpplugin/releases/latest), y añade aquí tu cambio en el mismo PR (ver «Cómo trabajamos en este repositorio» en el [README](README.md)).
+Historial del plugin EG Publicación, de lo más nuevo a lo más antiguo. Es el registro común de los cambios del repositorio: antes de cambiar o decidir nada sobre el plugin, léelo junto con la [última release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest), y añade aquí tu cambio en el mismo PR (ver «Cómo trabajamos en este repositorio» en el [README](README.md)).
 
 Cada entrada indica la versión, la fecha en que se publicó la release (UTC), el PR, qué cambia y a qué tipología, módulo y webs afecta. Las versiones siguen `MAYOR.MENOR.PARCHE`: parche para correcciones, menor para funciones nuevas compatibles, mayor si algo deja de funcionar como antes.
 
@@ -9,6 +9,11 @@ Cada entrada indica la versión, la fecha en que se publicó la release (UTC), e
 Cambios ya fusionados en `main` que aún no tienen release (no han subido la versión). Al publicar la siguiente versión, se mueven a su entrada.
 
 - Nada por ahora.
+
+## 2.111.0 · 17/11/2026 · PR (Claude, a petición de Enric)
+
+- El repositorio pasa a la organización del estudio: `enricgomez-Studio/mcp_wpplugin`. `EG_PUB_REPO`, `Update URI` y los enlaces del README apuntan ahí, y la cabecera indica la licencia GPL-3.0 y el copyright de EG Creative Studio, S.L. GitHub redirige la dirección antigua, así que las webs con versiones anteriores siguen recibiendo actualizaciones; con esta ya leen directamente del repo nuevo.
+- Webs: todas (solo cambia de dónde se descargan las actualizaciones).
 
 ## 2.110.0 · 17/11/2026 · PR (Claude, a petición de Enric)
 

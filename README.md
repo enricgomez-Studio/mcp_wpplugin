@@ -10,7 +10,7 @@ Plugin de WordPress de enricgomez Studio. Expone `/wp-json/eg/v1/publish`, que u
 
 Varias sesiones de Claude pueden modificar este plugin en paralelo. Para no pisarse ni decidir sobre una versión que ya no es la actual:
 
-1. **Antes de cambiar o decidir nada**: `git pull` de `main`, mira la [última release](https://github.com/enricgomez/mcp_wpplugin/releases/latest), los PR abiertos y el [CHANGELOG.md](CHANGELOG.md). Parte siempre de `main` actualizado, nunca de una copia antigua.
+1. **Antes de cambiar o decidir nada**: `git pull` de `main`, mira la [última release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest), los PR abiertos y el [CHANGELOG.md](CHANGELOG.md). Parte siempre de `main` actualizado, nunca de una copia antigua.
 2. **Cada cambio en el código del plugin** (`eg-publicacion.php` o `includes/`) sube la versión en el mismo PR: cabecera `Version:` y `EG_PUB_VERSION`, iguales (si no coinciden, la Action falla). Si no se sube, el merge no genera release y el cambio queda en `main` sin llegar a las webs hasta la siguiente versión.
 3. **Cada cambio añade su entrada en [CHANGELOG.md](CHANGELOG.md)** en el mismo PR, arriba del todo: versión, fecha, PR, quién lo hace, qué cambia y qué tipología, módulo y webs afecta. Un cambio solo de documentación no sube versión.
 4. Un PR por cambio, sin fusionar sin el OK de Enric. Después de fusionar, la rama de trabajo se reinicia desde `origin/main` antes del siguiente cambio.
@@ -141,7 +141,7 @@ Con WordPress anterior a la 6.9 no se registra nada y el resto del plugin funcio
 
 ### Instalación en una web
 
-1. Descarga `eg-publicacion.zip` de la última [release](https://github.com/enricgomez/mcp_wpplugin/releases/latest) (no el zip del código del repositorio, que crea la carpeta `mcp_wpplugin-main`). Desde la v2.7.2, si una web ya lo tiene en otra carpeta, las actualizaciones se instalan en esa misma carpeta y no dejan dos copias.
+1. Descarga `eg-publicacion.zip` de la última [release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest) (no el zip del código del repositorio, que crea la carpeta `mcp_wpplugin-main`). Desde la v2.7.2, si una web ya lo tiene en otra carpeta, las actualizaciones se instalan en esa misma carpeta y no dejan dos copias.
 2. En WordPress: Plugins → Añadir nuevo → Subir plugin, y actívalo.
 3. Si la web tenía la versión antigua como mu-plugin, borra `wp-content/mu-plugins/eg-studio-rest-publisher.php`. La clave y los ajustes se conservan, así que Make sigue funcionando.
 4. La clave para Make está en Ajustes → EG Publicación.

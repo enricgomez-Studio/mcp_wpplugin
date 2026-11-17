@@ -1,6 +1,6 @@
 <?php
 /**
- * Actualizaciones desde las releases de GitHub (enricgomez/mcp_wpplugin).
+ * Actualizaciones desde las releases de GitHub (enricgomez-Studio/mcp_wpplugin).
  *
  * Cada release lleva adjunto eg-publicacion.zip (lo genera la GitHub Action al
  * subir a main una versión nueva). Si el repositorio es privado, definir en wp-config.php:

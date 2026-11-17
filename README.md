@@ -154,7 +154,7 @@ Con WordPress anterior a la 6.9 no se registra nada y el resto del plugin funcio
 - `{"install": "eg-cookies"}`: instala la última release (o la reinstala encima) y la activa; `"activate": false` la deja sin activar.
 - `{"deactivate": "eg-cookies"}`: la desactiva sin borrarla.
 
-Solo se pueden instalar los de la lista (`eg_pub_own_plugins`): de momento [EG Cookies](https://github.com/enricgomez/eg-cookies). Después se actualizan solos desde su propio repositorio.
+Solo se pueden instalar los de la lista (`eg_pub_own_plugins`): de momento [EG Cookies](https://github.com/enricgomez-Studio/eg-cookies). Después se actualizan solos desde su propio repositorio.
 
 ### Publicar una versión nueva
 

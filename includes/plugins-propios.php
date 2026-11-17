@@ -19,7 +19,7 @@ function eg_pub_own_plugins() {
 	return apply_filters( 'eg_pub_own_plugins', array(
 		'eg-cookies' => array(
 			'name' => 'EG Cookies',
-			'repo' => 'enricgomez/eg-cookies',
+			'repo' => 'enricgomez-Studio/eg-cookies',
 			'file' => 'eg-cookies/eg-cookies.php',
 			'zip'  => 'eg-cookies.zip',
 		),

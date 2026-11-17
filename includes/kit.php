@@ -356,6 +356,16 @@ function eg_pub_media_optimize( $tmp, array $o ) {
 	$max = max( 200, min( 4000, (int) ( $o['max_width'] ?? 1920 ) ) );
 	$q   = max( 40, min( 95, (int) ( $o['quality'] ?? 82 ) ) );
 	$fmt = 'webp' === strtolower( (string) ( $o['format'] ?? 'jpg' ) ) ? 'webp' : 'jpg';
+	// Desde la 2.104.0: crop {x, y, w, h} recorta antes de reducir (p. ej. quitar el rótulo que Canva deja bajo un banner).
+	if ( ! empty( $o['crop'] ) && is_array( $o['crop'] ) ) {
+		$c = array_map( 'intval', $o['crop'] + array( 'x' => 0, 'y' => 0, 'w' => 0, 'h' => 0 ) );
+		if ( $c['w'] > 0 && $c['h'] > 0 ) {
+			$cropped = $editor->crop( max( 0, $c['x'] ), max( 0, $c['y'] ), $c['w'], $c['h'] );
+			if ( is_wp_error( $cropped ) ) {
+				return new WP_Error( 'eg_media_optimize', 'No se puede recortar: ' . $cropped->get_error_message() );
+			}
+		}
+	}
 	$size = $editor->get_size();
 	if ( ! empty( $size['width'] ) && $size['width'] > $max ) {
 		$editor->resize( $max, null, false );

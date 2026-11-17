@@ -40,6 +40,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 - `/orders` (módulo nuevo «Pedidos», tipología WooCommerce): diagnóstico de pedidos de solo lectura y sin datos personales (ni nombre, email, teléfono, dirección ni IP; en notas y registros se tapan emails y tarjetas). Estado, fechas, total, pasarela, transacción, productos, notas del pedido y campos de la pasarela; con `logs` también las últimas líneas de los registros de WooCommerce de una fuente (p. ej. la pasarela) y de `fatal-errors`.
 - Webs: dulcelucca.com (dos pedidos fallidos al abrir la campaña). En las demás no cambia nada hasta que se use.
 
+## 2.104.0 · 17/11/2026 · PR (Claude, a petición de Enric)
+
+- `/media`: `optimize` acepta `crop: {"x", "y", "w", "h"}` (píxeles de la imagen original). Recorta antes de reducir y recomprimir, para quitar márgenes o rótulos que vienen en el archivo (p. ej. «Banner web CAT_Mobile» que Canva deja debajo).
+- Webs: miriamtirado.com (banners móviles de Navidad 2026). En las demás no cambia nada hasta que se use.
+
 ## 2.103.0 · 14/11/2026 · PR (Claude, a petición de Enric)
 
 - `/media`: nueva opción por imagen `skip_imagify: true`. Imagify no optimiza automáticamente esa subida, para imágenes que ya vienen optimizadas y que una segunda compresión pixela (banners con texto). La respuesta trae `imagify: "skipped"`.

@@ -27,6 +27,11 @@
  *                              "ajax_single": true, "redirect_to_cart": false} los cambia (con apply: true). ajax_archive es
  *                              el AJAX de WooCommerce en listados, ajax_single el AJAX de la ficha de JetWooBuilder (si está
  *                              activo) y redirect_to_cart si tras añadir se va al carrito.
+ * recount_ratings recalcula la valoración media, el recuento de estrellas y el número de reseñas a partir de las
+ *                              reseñas aprobadas (lo mismo que hace WooCommerce al aprobar una reseña), para corregir
+ *                              valores guardados desfasados (p. ej. ratingValue 0 con reseñas en el schema de Google).
+ *                              Lista de IDs o SKU, o true para todos los productos con reseñas. Solo previsualiza;
+ *                              guarda con apply: true.
  * create crea un producto nuevo (en borrador salvo que set diga otro status), vacío o copiado de otro con
  * create.from (ID o SKU), y le aplica set. list devuelve todos los productos con su estado, papelera incluida.
  * Con dry_run devuelve lo que cambiaría sin guardar. Los textos se guardan sin wp_update_post para que WPML no
@@ -233,6 +238,10 @@ function eg_pub_product_handle( WP_REST_Request $r ) {
 
 	if ( isset( $p['shop_settings'] ) && is_array( $p['shop_settings'] ) ) {
 		return eg_pub_shop_settings_handle( $p['shop_settings'], ! empty( $p['apply'] ) );
+	}
+
+	if ( isset( $p['recount_ratings'] ) ) {
+		return eg_pub_product_recount_ratings( $p['recount_ratings'], ! empty( $p['apply'] ) );
 	}
 
 	$ids     = array_map( 'intval', (array) ( $p['ids'] ?? array() ) );
@@ -692,6 +701,61 @@ function eg_pub_product_ref_id( $ref ) {
 		return (int) $ref;
 	}
 	return (int) wc_get_product_id_by_sku( sanitize_text_field( $ref ) );
+}
+
+/**
+ * /product recount_ratings: compara la valoración guardada de cada producto con la que sale de sus reseñas aprobadas
+ * y, con apply, la recalcula como WooCommerce al aprobar una reseña (WC_Comments::clear_transients).
+ */
+function eg_pub_product_recount_ratings( $refs, $apply ) {
+	global $wpdb;
+	if ( ! class_exists( 'WC_Comments' ) ) {
+		return eg_pub_error( 'eg_woo', 'WooCommerce no tiene la clase de reseñas cargada.', 500 );
+	}
+	if ( true === $refs || 'all' === $refs ) {
+		$ids = array_map( 'intval', $wpdb->get_col(
+			"SELECT DISTINCT c.comment_post_ID FROM {$wpdb->comments} c JOIN {$wpdb->posts} p ON p.ID = c.comment_post_ID
+			 WHERE p.post_type = 'product' AND c.comment_type = 'review'"
+		) );
+	} else {
+		$ids = array_filter( array_map( 'eg_pub_product_ref_id', (array) $refs ) );
+	}
+	if ( ! $ids ) {
+		return eg_pub_error( 'eg_woo', 'recount_ratings: no hay productos que revisar.', 400 );
+	}
+	$rows = array();
+	foreach ( array_unique( $ids ) as $id ) {
+		$product = wc_get_product( $id );
+		if ( ! $product ) {
+			continue;
+		}
+		$before = array(
+			'average' => (string) $product->get_average_rating( 'edit' ),
+			'counts'  => (object) $product->get_rating_counts( 'edit' ),
+			'reviews' => (int) $product->get_review_count( 'edit' ),
+		);
+		$after = array(
+			'average' => (string) WC_Comments::get_average_rating_for_product( $product ),
+			'counts'  => (object) WC_Comments::get_rating_counts_for_product( $product ),
+			'reviews' => (int) WC_Comments::get_review_count_for_product( $product ),
+		);
+		$changed = wp_json_encode( $before ) !== wp_json_encode( $after );
+		if ( $apply && $changed ) {
+			WC_Comments::clear_transients( $id );
+			if ( function_exists( 'rocket_clean_post' ) ) {
+				rocket_clean_post( $id );
+			}
+		}
+		$rows[] = array(
+			'id'      => $id,
+			'title'   => $product->get_name(),
+			'url'     => get_permalink( $id ),
+			'changed' => $changed,
+			'before'  => $before,
+			'after'   => $after,
+		);
+	}
+	return new WP_REST_Response( array( 'ok' => true, 'applied' => (bool) $apply, 'products' => $rows ), 200 );
 }
 
 /** En dry_run, la imagen pedida tal cual, sin devolver el base64 entero. */

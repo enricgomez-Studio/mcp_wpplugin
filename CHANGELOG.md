@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.109.0 · 17/11/2026 · PR (Claude, a petición de Enric)
+
+- `/product` (WooCommerce): `recount_ratings` recalcula la valoración media, el recuento por estrellas y el número de reseñas a partir de las reseñas aprobadas, como hace WooCommerce al aprobar una reseña. Acepta IDs o SKU, o `true` para todos los productos con reseñas. Por defecto solo compara lo guardado con lo calculado; `apply: true` lo guarda y purga la caché del producto.
+- Motivo: en casanoguera.com Search Console marca «aggregateRating» no válido porque el Fuet Extra tiene una reseña de 5★ y `_wc_average_rating` guardado a 0.
+- Webs: casanoguera.com. En las demás no cambia nada hasta que se use.
+
 ## 2.108.0 · 17/11/2026 · PR #170 y #171 (Claude, a petición de Enric)
 
 - `/media`: `optimize` acepta `crop: {"x", "y", "w", "h"}` (píxeles de la imagen original). Recorta antes de reducir y recomprimir, para quitar márgenes o rótulos que vienen en el archivo (p. ej. «Banner web CAT_Mobile» que Canva deja debajo).

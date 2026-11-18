@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.113.0 · 18/11/2026 · PR (Claude, a petición de Enric)
+
+- `/perf` `fixes`: nuevo ajuste `thumbs_webp`. Crea la copia `foto.png.webp` de cada miniatura a medida de Elementor (`uploads/elementor/thumbs`), que Imagify no convierte porque no está en la biblioteca de medios. Con el mismo nombre que usa Imagify, nginx la sirve con `try_files $uri.webp` cuando el navegador acepta WebP. Al activarlo convierte las que faltan (Imagick o GD, calidad 82; si el WebP pesa más no se guarda) y deja una tarea diaria de WP-Cron para las nuevas. Los originales no se tocan; con `false` se quita la tarea.
+- Webs: clubdelviatger.cat (las miniaturas de las fichas de viajes salían en PNG). En el resto no cambia nada si no se activa.
+
 ## 2.112.0 · 18/11/2026 · PR (Claude, a petición de Enric)
 
 - `/publish` y `/item` (cuando cambian el contenido) rehacen el meta `_wpb_shortcodes_custom_css` de WPBakery a partir de los atributos `css=".vc_custom_…{…}"` del contenido. Ese meta solo lo genera el editor de WPBakery al guardar, así que las entradas que llegaban por la API salían sin los fondos y márgenes de sus filas.

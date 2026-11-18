@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.112.0 · 18/11/2026 · PR (Claude, a petición de Enric)
+
+- `/publish` y `/item` (cuando cambian el contenido) rehacen el meta `_wpb_shortcodes_custom_css` de WPBakery a partir de los atributos `css=".vc_custom_…{…}"` del contenido. Ese meta solo lo genera el editor de WPBakery al guardar, así que las entradas que llegaban por la API salían sin los fondos y márgenes de sus filas.
+- Webs: las que usan WPBakery (desire-vips.com). En el resto no cambia nada (el contenido no lleva `.vc_custom_`).
+
 ## 2.111.0 · 17/11/2026 · PR (Claude, a petición de Enric)
 
 - El repositorio pasa a la organización del estudio: `enricgomez-Studio/mcp_wpplugin`. `EG_PUB_REPO`, `Update URI` y los enlaces del README apuntan ahí, y la cabecera indica la licencia GPL-3.0 y el copyright de EG Creative Studio, S.L. GitHub redirige la dirección antigua, así que las webs con versiones anteriores siguen recibiendo actualizaciones; con esta ya leen directamente del repo nuevo.

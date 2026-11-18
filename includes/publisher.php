@@ -313,6 +313,7 @@ function eg_pub_handle( WP_REST_Request $r ) {
 		return eg_pub_error( 'eg_insert', 'WordPress no pudo guardar el post: ' . $post_id->get_error_message(), 500 );
 	}
 	update_post_meta( $post_id, EG_PUB_META_NOTION, $notion_id );
+	eg_pub_wpb_custom_css( $post_id, $content );
 
 	// --- Idioma y traducción (WPML) ----------------------------------------
 	if ( $has_wpml && $lang ) {
@@ -446,6 +447,24 @@ function eg_pub_handle( WP_REST_Request $r ) {
  * lo cambia y queda guardado para los siguientes posts de la web; sin él se usa el guardado. 0 = sin autor fijo
  * (firma el usuario con el que actúa el plugin). Un autor que no existe se anota en $notes y no cambia nada.
  */
+/**
+ * WPBakery guarda el CSS de diseño de cada fila o columna (fondo, márgenes: atributo css=".vc_custom_123{...}")
+ * en el meta _wpb_shortcodes_custom_css, que solo genera su editor al guardar. Si el contenido llega por la API,
+ * ese meta no existe y la página sale sin fondos ni márgenes. Aquí se rehace a partir del propio contenido.
+ * Devuelve cuántas reglas se han guardado (0 si el contenido no usa WPBakery).
+ */
+function eg_pub_wpb_custom_css( $post_id, $content ) {
+	if ( false === strpos( (string) $content, '.vc_custom_' ) ) {
+		return 0;
+	}
+	preg_match_all( '/css="(\.vc_custom_\d+\{[^"}]*\})"/', (string) $content, $m );
+	$rules = array_values( array_unique( $m[1] ) );
+	if ( $rules ) {
+		update_post_meta( $post_id, '_wpb_shortcodes_custom_css', implode( '', $rules ) );
+	}
+	return count( $rules );
+}
+
 function eg_pub_blog_author( $p, &$notes ) {
 	if ( isset( $p['author'] ) && '' !== (string) $p['author'] ) {
 		$ref  = (string) $p['author'];

@@ -298,6 +298,9 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 		global $wpdb;
 		$wpdb->update( $wpdb->posts, $row + array( 'post_modified' => current_time( 'mysql' ), 'post_modified_gmt' => current_time( 'mysql', true ) ), array( 'ID' => $post_id ) );
 		clean_post_cache( $post_id );
+		if ( isset( $row['post_content'] ) && function_exists( 'eg_pub_wpb_custom_css' ) ) {
+			eg_pub_wpb_custom_css( $post_id, $row['post_content'] );
+		}
 		if ( isset( $row['post_status'] ) && $row['post_status'] !== $post->post_status ) {
 			wp_transition_post_status( $row['post_status'], $post->post_status, get_post( $post_id ) );
 		}

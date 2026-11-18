@@ -9,7 +9,7 @@
  *               resultados se recogen después con results
  *   results     true devuelve (y borra) los perfiles guardados que nadie ha recogido todavía
  *   uninstall   true quita el mu-plugin de perfil y sus opciones
- *   fixes       {"jet_validator": true, "cdn_fonts": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
+ *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
  *               includes/perfil-ajustes.php); {} solo enseña cuáles están activos. Se puede combinar con urls para
  *               medir el efecto en la misma llamada (los ajustes se guardan antes de medir)
  * La primera llamada instala el mu-plugin `eg-pub-perfil.php` (copia de includes/perfil-mu.php), que no hace nada
@@ -111,6 +111,12 @@ function eg_pub_perf_handle( WP_REST_Request $request ) {
 		if ( ! empty( $fixes['cdn_fonts'] ) && ( ! $was_fonts || ! empty( $p['patch_min'] ) ) ) {
 			$fixes_state['cdn_fonts']['patched'] = eg_pub_cdn_fonts_patch_min();
 			$fixes_state['cdn_fonts']['preloads_deleted'] = eg_pub_cdn_fonts_clean_preloads();
+		}
+		if ( array_key_exists( 'thumbs_webp', (array) $p['fixes'] ) ) {
+			eg_pub_thumbs_webp_schedule( ! empty( $fixes['thumbs_webp'] ) );
+			if ( ! empty( $fixes['thumbs_webp'] ) ) {
+				$fixes_state['thumbs_webp'] = eg_pub_thumbs_webp_generate();
+			}
 		}
 		if ( array_key_exists( 'img_sizes', (array) $p['fixes'] ) && function_exists( 'rocket_clean_domain' ) ) {
 			rocket_clean_domain(); // Las páginas en caché llevan el `sizes` anterior.

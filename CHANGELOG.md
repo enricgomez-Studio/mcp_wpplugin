@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.116.0 · 19/11/2026 · PR (Claude)
+
+- `/i18n-check` `rows: true` (con `ids`): si una traducción tiene varias filas `_elementor_data`, detalla cada una (`meta_id`, `bytes`, `md5` y `same`, cuántos textos siguen iguales al original con esa fila), para ver si la traducción buena está en una fila que Elementor no usa. Ya no cuenta `slides_name` (nombre interno del repetidor).
+- Webs: hotelneptuno.com (traducciones con hasta 126 filas `_elementor_data`).
+
 ## 2.115.1 · 19/11/2026 · PR (Claude)
 
 - `/i18n-check`: cada traducción sale una sola vez. Si una entrada tenía varias filas `_elementor_data` se repetía tantas veces como filas (en hotelneptuno.com, 26 veces la misma página) y la revisión completa acababa en error 500. Nuevo campo `meta_rows` con el número de filas.

@@ -10,6 +10,8 @@
  *   ids      opcional: solo esas traducciones (o las traducciones de esos originales).
  *   widgets  opcional: solo esos tipos de widget (["slides", "heading"]).
  *   full     opcional: true devuelve el texto completo de cada campo (por defecto, los 120 primeros caracteres).
+ *   rows     opcional, con ids: si la entrada tiene varias filas _elementor_data, detalla cada una (meta_id, bytes,
+ *            md5 y cuántos textos siguen iguales al original con esa fila). Elementor solo usa la primera.
  * Cada página va una sola vez aunque tenga varias filas _elementor_data (meta_rows dice cuántas).
  * Los arreglos se hacen después con /template patch en cada traducción.
  */
@@ -36,7 +38,7 @@ add_action( 'rest_api_init', function () {
 
 /** ¿Es un ajuste de texto visible (y no de estilo o configuración)? */
 function eg_pub_i18n_is_text( $key, $value ) {
-	if ( ! is_string( $value ) || '' === $key || '_' === $key[0] ) {
+	if ( ! is_string( $value ) || '' === $key || '_' === $key[0] || 'slides_name' === $key ) {
 		return false;
 	}
 	if ( preg_match( '/typography|font|color|css|class|animation|icon|image|background|url|link|html_tag|anchor|align|position|size|width|height|template|shortcode|source|selected/i', $key ) ) {
@@ -87,6 +89,27 @@ function eg_pub_i18n_same( $orig, $tr, $prefix, $full, &$out ) {
 	}
 }
 
+/** Widgets de una traducción con textos iguales al original: array( lista, número de campos ). */
+function eg_pub_i18n_compare( $tr_data, $orig_map, $widgets, $full ) {
+	$tr_map = array();
+	eg_pub_i18n_index( $tr_data, $tr_map );
+	$found = array();
+	$n     = 0;
+	foreach ( $tr_map as $eid => $el ) {
+		$wtype = (string) ( $el['widgetType'] ?? '' );
+		if ( '' === $wtype || ! isset( $orig_map[ $eid ] ) || ( $widgets && ! in_array( $wtype, $widgets, true ) ) ) {
+			continue;
+		}
+		$same = array();
+		eg_pub_i18n_same( (array) ( $orig_map[ $eid ]['settings'] ?? array() ), (array) ( $el['settings'] ?? array() ), '', $full, $same );
+		if ( $same ) {
+			$found[] = array( 'element' => (string) $eid, 'widget' => $wtype, 'fields' => $same );
+			$n      += count( $same );
+		}
+	}
+	return array( $found, $n );
+}
+
 function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 	global $wpdb;
 	$default = (string) apply_filters( 'wpml_default_language', null );
@@ -97,6 +120,7 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 	$only    = array_filter( array_map( 'intval', (array) $r->get_param( 'ids' ) ) );
 	$widgets = array_filter( array_map( 'sanitize_key', (array) $r->get_param( 'widgets' ) ) );
 	$full    = (bool) $r->get_param( 'full' );
+	$rows_detail = (bool) $r->get_param( 'rows' );
 
 	$rows = $wpdb->get_results(
 		"SELECT p.ID, p.post_type, MIN(t.language_code) AS lang, MIN(t.trid) AS trid, COUNT(DISTINCT m.meta_id) AS metas
@@ -131,21 +155,23 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 			continue;
 		}
 		++$checked;
-		$tr_map   = array();
 		$orig_map = array();
-		eg_pub_i18n_index( $tr_data, $tr_map );
 		eg_pub_i18n_index( $orig_data, $orig_map );
-		$found = array();
-		foreach ( $tr_map as $eid => $el ) {
-			$wtype = (string) ( $el['widgetType'] ?? '' );
-			if ( '' === $wtype || ! isset( $orig_map[ $eid ] ) || ( $widgets && ! in_array( $wtype, $widgets, true ) ) ) {
-				continue;
-			}
-			$same = array();
-			eg_pub_i18n_same( (array) ( $orig_map[ $eid ]['settings'] ?? array() ), (array) ( $el['settings'] ?? array() ), '', $full, $same );
-			if ( $same ) {
-				$found[]   = array( 'element' => $eid, 'widget' => $wtype, 'fields' => $same );
-				$fields_n += count( $same );
+		list( $found, $n ) = eg_pub_i18n_compare( $tr_data, $orig_map, $widgets, $full );
+		$fields_n         += $n;
+		$meta_rows         = array();
+		if ( $rows_detail && $only && (int) $row['metas'] > 1 ) {
+			// Cada fila _elementor_data por separado: cuántos textos siguen iguales al original con esa fila.
+			$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = '_elementor_data' ORDER BY meta_id", $id ), ARRAY_A );
+			foreach ( $metas as $m ) {
+				$data        = json_decode( (string) $m['meta_value'], true );
+				$res         = is_array( $data ) ? eg_pub_i18n_compare( $data, $orig_map, $widgets, false ) : array( array(), null );
+				$meta_rows[] = array(
+					'meta_id' => (int) $m['meta_id'],
+					'bytes'   => strlen( (string) $m['meta_value'] ),
+					'md5'     => md5( (string) $m['meta_value'] ),
+					'same'    => $res[1],
+				);
 			}
 		}
 		if ( $found ) {
@@ -159,6 +185,7 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 				'widgets'  => $found,
 				// Más de una fila _elementor_data en la misma entrada: Elementor solo usa la primera.
 				'meta_rows' => (int) $row['metas'],
+				'rows'      => $meta_rows,
 			);
 		}
 	}

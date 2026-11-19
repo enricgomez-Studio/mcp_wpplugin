@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.118.0 · 19/11/2026 · PR (Claude)
+
+- Nuevo módulo `/scripts` (tipología Gestión de la web, capacidad `unfiltered_html`): códigos de terceros (chat, píxeles, widgets) por clave, pegados tal cual los da el proveedor, en la cabecera (`position: "head"`), justo tras `<body>` (`"body"`) o en el pie (`"footer"`). Mismo funcionamiento que `/css`: `enabled` (nace apagado), `pages` (con WPML cuentan sus traducciones), `label`, historial de 10 versiones, `rollback`, `delete`; solo previsualiza y guarda con `apply: true`, vaciando la caché de WP Rocket. Para probar sin publicar: `?eg_js=<clave>`; `?eg_js=off` quita todos en esa visita.
+- `/backup`: un trabajo de UpdraftPlus sin terminar de hace más de 6 horas (p. ej. atascado reintentando la subida FTP) sale como `stale` y ya no impide lanzar una copia nueva.
+- Webs: hotelneptuno.com (widget de chat HiJiffy; la subida FTP de UpdraftPlus siempre falla y dejaba el trabajo de las 06:16 en «pruning»).
+
 ## 2.117.1 · 19/11/2026 · PR (Claude)
 
 - Seguridad, `/gateways`: el listado de ajustes de pasarelas tapaba solo los valores de primer nivel cuyo nombre parecía una clave. Ahora también tapa dentro de listas anidadas (p. ej. `webhook_data` de Stripe, que llevaba la clave secreta en claro), los nombres con `sha256` (claves de firma de Redsys) y cualquier valor con forma de clave (`sk_live_`, `sk_test_`, `whsec_`…) aunque el nombre no lo diga.

@@ -76,7 +76,10 @@ function eg_pub_backup_state() {
 			'entity'  => (string) ( $data['dbcreating_substatus']['t'] ?? $data['filecreating_substatus']['e'] ?? '' ),
 			'errors'  => (int) ( $data['errors_so_far'] ?? 0 ),
 		);
-		if ( '' !== $status && 'finished' !== $status ) {
+		// Un trabajo sin terminar de hace más de 6 horas está atascado (p. ej. reintentando una subida FTP que siempre falla): no bloquea una copia nueva.
+		$stale = ! empty( $data['backup_time'] ) && (int) $data['backup_time'] < time() - 6 * HOUR_IN_SECONDS;
+		$jobs[ count( $jobs ) - 1 ]['stale'] = $stale;
+		if ( '' !== $status && 'finished' !== $status && ! $stale ) {
 			$due = true;
 		}
 	}

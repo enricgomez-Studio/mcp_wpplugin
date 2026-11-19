@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.115.1 · 19/11/2026 · PR (Claude)
+
+- `/i18n-check`: cada traducción sale una sola vez. Si una entrada tenía varias filas `_elementor_data` se repetía tantas veces como filas (en hotelneptuno.com, 26 veces la misma página) y la revisión completa acababa en error 500. Nuevo campo `meta_rows` con el número de filas.
+- Webs: hotelneptuno.com.
+
 ## 2.115.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 
 - `/backup`: `in_progress` ya no da siempre `true` en webs con copias programadas (el aviso semanal de UpdraftPlus contaba como copia en curso); ahora cuenta solo lo que ya tocaba ejecutar o un trabajo de UpdraftPlus sin terminar. El estado añade `cron` (avisos de UpdraftPlus con su hora), `jobs` (trabajos en marcha: fase, tabla o entidad y errores) y `files` (últimos ficheros de la carpeta de copias). Los errores de la última copia salen con su texto en vez de «Array».

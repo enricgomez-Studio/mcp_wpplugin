@@ -126,9 +126,12 @@ function eg_pub_backup_handle( WP_REST_Request $r ) {
 		if ( $state['in_progress'] ) {
 			$out['message'] = 'Ya hay una copia en curso.';
 		} else {
-			// Los mismos eventos que usa UpdraftPlus para sus copias programadas.
+			// Los eventos del botón «Copia de seguridad ahora» de UpdraftPlus. Los de las copias programadas
+			// (updraft_backup_database) no hacen nada cuando la base de datos va con el mismo horario que los ficheros.
+			// nocloud: true deja la copia solo en el servidor, sin subirla al almacenamiento remoto.
 			$db_only = 'db' === $r['run'];
-			wp_schedule_single_event( time(), $db_only ? 'updraft_backup_database' : 'updraft_backup_all' );
+			$opts    = array( 'nocloud' => empty( $r['nocloud'] ) ? 0 : 1 );
+			wp_schedule_single_event( time(), $db_only ? 'updraft_backupnow_backup_database' : 'updraft_backupnow_backup_all', array( $opts ) );
 			spawn_cron();
 			$out['started'] = true;
 			$out['message'] = ( $db_only ? 'Copia de la base de datos' : 'Copia completa' ) . ' lanzada en segundo plano. Llama sin parámetros para ver cuándo termina.';

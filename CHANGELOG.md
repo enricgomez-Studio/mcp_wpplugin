@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.119.2 · 19/11/2026 · PR (Claude)
+
+- `/backup` `run`: lanza la copia con los eventos del botón «Copia de seguridad ahora» de UpdraftPlus (`updraft_backupnow_backup_database` / `_all`). Con `run: "db"` se usaba el evento de la copia programada, que UpdraftPlus ignora cuando la base de datos y los ficheros van con el mismo horario: no se hacía nada. Nuevo `nocloud: true` para dejar la copia solo en el servidor (sin la subida remota).
+- Webs: hotelneptuno.com.
+
 ## 2.119.1 · 19/11/2026 · PR (Claude)
 
 - `/backup` `log: true` (o un número de líneas, hasta 300): devuelve el final del registro más reciente de UpdraftPlus, para ver por qué una copia no arranca o dónde se para.

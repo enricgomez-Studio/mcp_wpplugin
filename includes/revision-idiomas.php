@@ -2,7 +2,7 @@
 /**
  * Tipología «Gestión de la web», módulo «revision-idiomas»: encuentra textos de Elementor sin traducir.
  *   POST /wp-json/eg/v1/i18n-check
- * Solo lee. Recorre las traducciones de WPML hechas con Elementor (páginas, entradas, tipos propios y plantillas)
+ * Sin fix solo lee. Recorre las traducciones de WPML hechas con Elementor (páginas, entradas, tipos propios y plantillas)
  * y compara cada widget con el mismo widget (mismo id de elemento) del original en el idioma principal. Devuelve
  * los textos que siguen idénticos al original, es decir, que se ven en el idioma principal en esa traducción
  * (p. ej. los textos de un carrusel de diapositivas que WPML no tradujo).
@@ -13,7 +13,10 @@
  *   rows     opcional, con ids: si la entrada tiene varias filas _elementor_data, detalla cada una (meta_id, bytes,
  *            md5 y cuántos textos siguen iguales al original con esa fila). Elementor solo usa la primera.
  * Cada página va una sola vez aunque tenga varias filas _elementor_data (meta_rows dice cuántas).
- * Los arreglos se hacen después con /template patch en cada traducción.
+ *   fix      { "<id de traducción>": { "<id de elemento>": { "slides.0.heading": "Texto traducido", … } } }: escribe esos
+ *            textos en la traducción, por ruta (la misma que devuelve la revisión). Solo cambia rutas que ya existen
+ *            y son texto. Solo previsualiza; guarda con apply:true (copia en _eg_pub_elementor_backup, como
+ *            /template patch, y vacía la caché de CSS de Elementor y de WP Rocket de esa página).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -121,6 +124,13 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 	$widgets = array_filter( array_map( 'sanitize_key', (array) $r->get_param( 'widgets' ) ) );
 	$full    = (bool) $r->get_param( 'full' );
 	$rows_detail = (bool) $r->get_param( 'rows' );
+	$fix         = $r->get_param( 'fix' );
+	if ( is_array( $fix ) && $fix ) {
+		return eg_pub_i18n_fix( $fix, (bool) $r->get_param( 'apply' ) );
+	}
+	if ( function_exists( 'set_time_limit' ) ) {
+		@set_time_limit( 300 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+	}
 
 	$rows = $wpdb->get_results(
 		"SELECT p.ID, p.post_type, MIN(t.language_code) AS lang, MIN(t.trid) AS trid, COUNT(DISTINCT m.meta_id) AS metas
@@ -197,4 +207,89 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 		'fields'       => $fields_n,
 		'pages'        => $pages,
 	);
+}
+
+/** Pone un texto en una ruta «a.0.b» de los ajustes, solo si ya existe y es texto. */
+function eg_pub_i18n_set_path( &$settings, $path, $value ) {
+	$ref = &$settings;
+	foreach ( explode( '.', (string) $path ) as $part ) {
+		if ( ! is_array( $ref ) || ! array_key_exists( $part, $ref ) ) {
+			return false;
+		}
+		$ref = &$ref[ $part ];
+	}
+	if ( ! is_string( $ref ) ) {
+		return false;
+	}
+	$changed = $ref !== $value;
+	$ref     = $value;
+	return $changed ? 'changed' : 'same';
+}
+
+/** Escribe textos traducidos en las traducciones (fix). */
+function eg_pub_i18n_fix( $fix, $apply ) {
+	$out = array();
+	foreach ( $fix as $pid => $elements ) {
+		$pid = (int) $pid;
+		$res = array( 'id' => $pid, 'changed' => array(), 'same' => array(), 'missing' => array() );
+		if ( ! $pid || ! get_post( $pid ) || ! is_array( $elements ) ) {
+			$res['error'] = 'No existe esa entrada o faltan los elementos.';
+			$out[]        = $res;
+			continue;
+		}
+		if ( ! current_user_can( 'edit_post', $pid ) ) {
+			$res['error'] = 'No se puede editar esa entrada.';
+			$out[]        = $res;
+			continue;
+		}
+		$old  = (string) get_post_meta( $pid, '_elementor_data', true );
+		$data = json_decode( $old, true );
+		if ( ! is_array( $data ) ) {
+			$res['error'] = 'Esa entrada no tiene JSON de Elementor.';
+			$out[]        = $res;
+			continue;
+		}
+		$walk = function ( &$els ) use ( &$walk, $elements, &$res ) {
+			foreach ( $els as &$el ) {
+				if ( ! is_array( $el ) ) {
+					continue;
+				}
+				$eid = (string) ( $el['id'] ?? '' );
+				if ( '' !== $eid && isset( $elements[ $eid ] ) && is_array( $elements[ $eid ] ) ) {
+					if ( ! isset( $el['settings'] ) || ! is_array( $el['settings'] ) ) {
+						$el['settings'] = array();
+					}
+					foreach ( $elements[ $eid ] as $path => $text ) {
+						$done = eg_pub_i18n_set_path( $el['settings'], $path, (string) $text );
+						$res[ $done ? $done : 'missing' ][] = $eid . ':' . $path;
+					}
+					$res['seen'][] = $eid;
+				}
+				if ( ! empty( $el['elements'] ) && is_array( $el['elements'] ) ) {
+					$walk( $el['elements'] );
+				}
+			}
+			unset( $el );
+		};
+		$walk( $data );
+		foreach ( array_keys( $elements ) as $eid ) {
+			if ( ! in_array( (string) $eid, $res['seen'] ?? array(), true ) ) {
+				$res['missing'][] = (string) $eid;
+			}
+		}
+		unset( $res['seen'] );
+		$res['applied'] = false;
+		if ( $apply && $res['changed'] ) {
+			update_post_meta( $pid, '_eg_pub_elementor_backup', wp_slash( wp_json_encode( array( 'time' => time(), 'title' => get_the_title( $pid ), 'data' => $old ) ) ) );
+			update_post_meta( $pid, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
+			delete_post_meta( $pid, '_elementor_css' );
+			delete_post_meta( $pid, '_elementor_element_cache' );
+			if ( function_exists( 'rocket_clean_post' ) ) {
+				rocket_clean_post( $pid );
+			}
+			$res['applied'] = true;
+		}
+		$out[] = $res;
+	}
+	return array( 'ok' => true, 'applied' => $apply, 'pages' => $out );
 }

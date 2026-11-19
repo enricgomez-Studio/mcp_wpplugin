@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.123.0 · 19/11/2026 · PR (Claude, a petición de Enric)
+
+- `/rocket` acepta `clear_hints: true`: borra los «elementos prioritarios» de WP Rocket (Performance Hints: imagen crítica precargada, fuentes, preconnect y lazy render) con el mismo filtro que el botón «Limpiar elementos prioritarios» de su barra, y vacía la caché de páginas. Sirve cuando Rocket sigue precargando una imagen que ya no está en la página. La respuesta trae `hints` con el resultado.
+- Webs: bowling-golf.cat (precargaba en la portada una foto que ya no se usa).
+
 ## 2.122.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo `POST /wpml-widgets` (Gestión de la web, módulo `wpml-widgets`, `manage_options`): registra en WPML widgets de Elementor cuyos textos WPML no muestra en su editor de traducción y que, al retraducir, se copian del original. De momento, las diapositivas de Elementor Pro (`slides`: título, descripción, texto del botón y enlace de cada diapositiva). Sin parámetros hace un diagnóstico (versión de WPML, si el widget está registrado y con qué campos, método de traducción y traducciones editadas a mano con Elementor); `enable` / `disable` con `apply: true` lo activa o lo quita.

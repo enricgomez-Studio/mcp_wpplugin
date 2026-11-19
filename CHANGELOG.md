@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.115.0 · 19/11/2026 · PR (Claude, a petición de Enric)
+
+- `/backup`: `in_progress` ya no da siempre `true` en webs con copias programadas (el aviso semanal de UpdraftPlus contaba como copia en curso); ahora cuenta solo lo que ya tocaba ejecutar o un trabajo de UpdraftPlus sin terminar. El estado añade `cron` (avisos de UpdraftPlus con su hora), `jobs` (trabajos en marcha: fase, tabla o entidad y errores) y `files` (últimos ficheros de la carpeta de copias). Los errores de la última copia salen con su texto en vez de «Array».
+- `/backup` `run: "db"`: copia solo de la base de datos, con el destino remoto de la web.
+- Webs: hotelneptuno.com (no se veía si la copia lanzada había terminado). En el resto, solo cambia la respuesta.
+
 ## 2.114.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo módulo «revision-idiomas» (tipología Gestión de la web): `POST /i18n-check`, solo lectura. Recorre las traducciones de WPML hechas con Elementor y devuelve los textos de cada widget que siguen idénticos al original en el idioma principal (también dentro de repetidores como las diapositivas). Filtros opcionales `langs`, `ids`, `widgets` y `full`. Los arreglos se hacen después con `/template patch`.

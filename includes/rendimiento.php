@@ -12,6 +12,10 @@
  *                  los nonces del HTML cacheado (formularios, buscadores) pueden caducar antes que la página.
  *   clear          true vacía la caché de WP Rocket como su botón «Vaciar caché» y purga toda la caché de
  *                  Cloudflare con los datos del complemento de WP Rocket (si está activo y configurado)
+ *   clear_hints    true borra los «elementos prioritarios» de WP Rocket (Performance Hints: imágenes críticas
+ *                  precargadas, fuentes, preconnect y lazy render), como «Limpiar elementos prioritarios» de su
+ *                  barra, y vacía la caché de páginas. Hace falta al cambiar la imagen principal de una página:
+ *                  si no, Rocket sigue precargando la antigua. Se rehacen solos con las siguientes visitas.
  * Como /seo y /term, por defecto solo previsualiza; apply:true guarda y vacía la caché de WP Rocket.
  */
 
@@ -101,6 +105,32 @@ function eg_pub_rocket_purge_cloudflare( $opts ) {
 	);
 }
 
+/**
+ * Borra los datos de Performance Hints de WP Rocket con su propio filtro (el del botón «Limpiar elementos
+ * prioritarios»). El filtro exige rocket_manage_options: si la petición no lo tiene, se hace como un administrador
+ * y se vuelve al usuario de antes.
+ */
+function eg_pub_rocket_clear_hints() {
+	if ( ! has_filter( 'rocket_performance_hints_clean_all' ) ) {
+		return array( 'ok' => false, 'error' => 'Esta versión de WP Rocket no tiene elementos prioritarios (Performance Hints).' );
+	}
+	$prev = get_current_user_id();
+	if ( ! current_user_can( 'rocket_manage_options' ) ) {
+		$admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID', 'orderby' => 'ID' ) );
+		if ( $admins ) {
+			wp_set_current_user( (int) $admins[0] );
+		}
+	}
+	$res = apply_filters( 'rocket_performance_hints_clean_all', array() );
+	wp_set_current_user( $prev );
+	$status = is_array( $res ) ? ( $res['status'] ?? null ) : null;
+	return array(
+		'ok'     => 'success' === $status,
+		'status' => $status,
+		'note'   => null === $status ? 'WP Rocket no tiene activa ninguna optimización que use elementos prioritarios.' : null,
+	);
+}
+
 function eg_pub_rocket_handle( WP_REST_Request $r ) {
 	if ( ! defined( 'WP_ROCKET_VERSION' ) ) {
 		return eg_pub_error( 'eg_rocket', 'WP Rocket no está activo en esta web.' );
@@ -185,8 +215,13 @@ function eg_pub_rocket_handle( WP_REST_Request $r ) {
 		}
 	}
 
+	$hints = null;
+	if ( ! empty( $p['clear_hints'] ) ) {
+		$hints = eg_pub_rocket_clear_hints();
+	}
+
 	$cleared = false;
-	if ( ! empty( $p['clear'] ) && function_exists( 'rocket_clean_domain' ) && ! ( $apply && $changes ) ) {
+	if ( ( ! empty( $p['clear'] ) || ! empty( $hints['ok'] ) ) && function_exists( 'rocket_clean_domain' ) && ! ( $apply && $changes ) ) {
 		// after_rocket_clean_domain es lo que escucha el complemento de Cloudflare para purgar.
 		rocket_clean_domain();
 		$cleared = true;
@@ -201,6 +236,7 @@ function eg_pub_rocket_handle( WP_REST_Request $r ) {
 		'applied'  => $apply && (bool) $changes,
 		'cleared'  => $cleared || ( $apply && $changes ),
 		'cloudflare' => $cloudflare,
+		'hints'    => $hints,
 		'version'  => WP_ROCKET_VERSION,
 		'settings' => eg_pub_rocket_view( $apply ? $new : $opts ),
 		'elementor' => array_map( fn( $def ) => get_option( $def[0], null ), EG_PUB_ELEMENTOR_PERF ),

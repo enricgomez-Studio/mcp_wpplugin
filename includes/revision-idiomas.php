@@ -10,6 +10,7 @@
  *   ids      opcional: solo esas traducciones (o las traducciones de esos originales).
  *   widgets  opcional: solo esos tipos de widget (["slides", "heading"]).
  *   full     opcional: true devuelve el texto completo de cada campo (por defecto, los 120 primeros caracteres).
+ * Cada página va una sola vez aunque tenga varias filas _elementor_data (meta_rows dice cuántas).
  * Los arreglos se hacen después con /template patch en cada traducción.
  */
 
@@ -98,11 +99,12 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 	$full    = (bool) $r->get_param( 'full' );
 
 	$rows = $wpdb->get_results(
-		"SELECT p.ID, p.post_type, t.language_code AS lang, t.trid
+		"SELECT p.ID, p.post_type, MIN(t.language_code) AS lang, MIN(t.trid) AS trid, COUNT(DISTINCT m.meta_id) AS metas
 		FROM {$wpdb->posts} p
 		JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_elementor_data'
 		JOIN {$wpdb->prefix}icl_translations t ON t.element_id = p.ID AND t.element_type = CONCAT('post_', p.post_type)
-		WHERE p.post_status = 'publish' AND p.post_type NOT IN ('revision', 'nav_menu_item')",
+		WHERE p.post_status = 'publish' AND p.post_type NOT IN ('revision', 'nav_menu_item')
+		GROUP BY p.ID, p.post_type",
 		ARRAY_A
 	);
 	$by_trid = array();
@@ -155,6 +157,8 @@ function eg_pub_i18n_check_handle( WP_REST_Request $r ) {
 				'url'      => 'elementor_library' === $row['post_type'] ? '' : get_permalink( $id ),
 				'original' => $orig_id,
 				'widgets'  => $found,
+				// Más de una fila _elementor_data en la misma entrada: Elementor solo usa la primera.
+				'meta_rows' => (int) $row['metas'],
 			);
 		}
 	}

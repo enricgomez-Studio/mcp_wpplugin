@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.119.1 · 19/11/2026 · PR (Claude)
+
+- `/backup` `log: true` (o un número de líneas, hasta 300): devuelve el final del registro más reciente de UpdraftPlus, para ver por qué una copia no arranca o dónde se para.
+- Webs: hotelneptuno.com (la copia de la base de datos lanzada no dejaba trabajo ni fichero).
+
 ## 2.119.0 · 19/11/2026 · PR (Claude)
 
 - Nuevo módulo `/i18n-slugs` (Gestión de la web, requiere WPML): lista las traducciones publicadas cuyo slug sigue igual que el del original (`all: true` para todas), con su ruta, y con `redirects: true` las redirecciones de Redirection con avisos (`shadows_live` si tapan una página publicada, `chain`, `loop`). `set` (`{"<id>": "slug-nuevo"}`) cambia el slug y, para la entrada y sus hijas, crea la 301 de la URL vieja a la nueva, reapunta las redirecciones que iban a la vieja y desactiva las que tenían la nueva como origen. Borra el indexable de Yoast. Solo previsualiza; guarda con `apply: true`.

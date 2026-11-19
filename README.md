@@ -90,7 +90,7 @@ Servicio de pago para que el cliente gestione su blog y sus productos desde su p
 - **Conexiones**: el cliente las crea y revoca en el menú «Asistente IA» del escritorio (o nosotros con `create`). Cada una va ligada a un usuario de WordPress y se respetan sus permisos. La URL es `/wp-json/eg/v1/mcp/egai_…` (también vale `Authorization: Bearer egai_…`); solo se guarda su hash.
 - **Límites**: no borra nada ni toca páginas, ajustes, plugins o usuarios; no edita el contenido de posts maquetados con Elementor; 60 peticiones por minuto y conexión. Todas las acciones quedan en el registro (`eg_pub_ai_log`, últimas 200).
 - Herramientas: `site_info`, `upload_image`, `list_posts`, `get_post`, `create_post`, `update_post`, `list_products`, `get_product`, `create_product`, `update_product`.
-- Pendiente (fase 2): acceso con OAuth (iniciar sesión con el usuario de la web en lugar de la URL privada).
+- **Inicio de sesión con OAuth (desde la v2.121.0, la forma recomendada)**: el cliente añade el conector con la dirección `/wp-json/eg/v1/mcp` sin clave; su asistente le pide entrar con su usuario de la web (pantalla en `wp-admin/admin-post.php`, que funciona aunque wp-login.php esté escondido) y elegir los ámbitos. OAuth 2.1 con PKCE S256, registro dinámico de clientes y metadatos en `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server` (también en `/wp-json/eg/v1/oauth/resource` y `/oauth/metadata`). Token de acceso de 1 hora y de refresco de 90 días que cambia en cada uso. Cada autorización es una conexión más (tipo «Inicio de sesión»), revocable igual que las de dirección privada.
 
 ### Endpoints
 

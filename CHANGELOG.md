@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.121.0 · 19/11/2026 · PR (Claude, a petición de Enric)
+
+- Asistente IA: acceso con **OAuth** al servidor MCP. El cliente pega `/wp-json/eg/v1/mcp` en su Claude o ChatGPT, entra con su usuario de la web y elige qué podrá hacer su asistente (blog, productos), sin URL privada. OAuth 2.1 con PKCE S256, registro dinámico de clientes (RFC 7591) y metadatos (RFC 8414 y RFC 9728) en `/.well-known/` y en `/wp-json/eg/v1/oauth/`. El 401 del servidor MCP indica dónde están los metadatos. Tokens de acceso de 1 hora y de refresco de 90 días, rotativos, guardados como hash. La pantalla «Asistente IA» explica primero esta forma y muestra el tipo de cada conexión.
+- Webs: ninguna todavía (el servicio sigue apagado por defecto).
+
 ## 2.120.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo servicio **Asistente IA** (perfil cliente): servidor MCP remoto propio en `/wp-json/eg/v1/mcp/<clave>` para que el cliente cree y edite posts del blog y productos de WooCommerce desde su propio Claude o ChatGPT. Nace apagado: se activa por web con `POST /assistant` (tipología Gestión de la web, clave X-EG-Key), con los ámbitos contratados (`blog`, `productos`), si puede publicar y las reglas de estilo de la web. Conexiones por usuario de WordPress, revocables, con registro de acciones, en el nuevo menú «Asistente IA» del escritorio. Sin borrar nada ni tocar páginas, ajustes o usuarios. Detalle en el README.

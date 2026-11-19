@@ -151,12 +151,16 @@ function eg_pub_ai_revoke_connection( $id ) {
 /** Busca la conexión de una clave. Devuelve array( id, conexión ) o null. */
 function eg_pub_ai_find_connection( $token ) {
 	$token = (string) $token;
-	if ( 0 !== strpos( $token, EG_PUB_AI_TOKEN_PREFIX ) ) {
+	$oauth = 0 === strpos( $token, 'egat_' ); // Token de acceso OAuth (includes/asistente-oauth.php).
+	if ( ! $oauth && 0 !== strpos( $token, EG_PUB_AI_TOKEN_PREFIX ) ) {
 		return null;
 	}
 	$hash = eg_pub_ai_token_hash( $token );
 	foreach ( eg_pub_ai_connections() as $id => $c ) {
 		if ( ! empty( $c['hash'] ) && hash_equals( $c['hash'], $hash ) ) {
+			if ( $oauth !== ( 'oauth' === ( $c['type'] ?? '' ) ) || ( $oauth && ( $c['expires'] ?? 0 ) < time() ) ) {
+				return null;
+			}
 			return array( $id, $c );
 		}
 	}
@@ -169,6 +173,7 @@ function eg_pub_ai_connection_public( $id, $c ) {
 	return array(
 		'id'        => $id,
 		'label'     => $c['label'],
+		'type'      => 'oauth' === ( $c['type'] ?? '' ) ? 'oauth' : 'url',
 		'user'      => $user ? $user->user_login : null,
 		'scopes'    => $c['scopes'],
 		'key_end'   => '…' . $c['hint'],
@@ -304,7 +309,7 @@ function eg_pub_ai_admin_handle( WP_REST_Request $r ) {
 		'publish'          => $service['publish'],
 		'notes'            => $service['notes'],
 		'updated'          => $service['updated'] ? wp_date( 'Y-m-d H:i', $service['updated'] ) : null,
-		'mcp_base'         => rest_url( 'eg/v1/mcp/' ),
+		'mcp_url'          => eg_pub_ai_resource(),
 	);
 	$out['connections'] = array();
 	foreach ( eg_pub_ai_connections() as $id => $c ) {
@@ -357,7 +362,7 @@ function eg_pub_ai_mcp_handle( WP_REST_Request $r ) {
 	}
 	$found = '' !== $token ? eg_pub_ai_find_connection( $token ) : null;
 	if ( ! $found ) {
-		return eg_pub_ai_http( eg_pub_ai_rpc_error( null, -32001, 'Conexión no válida o revocada. Crea una nueva en el escritorio de la web, menú «Asistente IA».' ), 401, array( 'WWW-Authenticate' => 'Bearer realm="eg-asistente"' ) );
+		return eg_pub_ai_http( eg_pub_ai_rpc_error( null, -32001, 'Conexión no válida o revocada. Crea una nueva en el escritorio de la web, menú «Asistente IA».' ), 401, array( 'WWW-Authenticate' => 'Bearer realm="eg-asistente", resource_metadata="' . eg_pub_ai_resource_metadata_url() . '"' ) );
 	}
 	list( $conn_id, $conn ) = $found;
 	$user = get_userdata( (int) $conn['user_id'] );
@@ -538,6 +543,14 @@ function eg_pub_ai_admin_page() {
 			<div class="error"><p><?php echo esc_html( $error ); ?></p></div>
 		<?php endif; ?>
 
+		<div class="card" style="max-width:52em;padding:4px 16px 8px">
+			<h2>Conectar iniciando sesión (recomendado)</h2>
+			<p>Añade en tu asistente un conector personalizado con esta dirección. Al conectarlo te pedirá entrar con tu usuario de esta web y elegir qué podrá hacer:</p>
+			<p><input type="text" readonly class="large-text code" value="<?php echo esc_attr( eg_pub_ai_resource() ); ?>" onclick="this.select()"></p>
+			<p><strong>Claude</strong> (web o app de escritorio): Ajustes → Conectores → «Añadir conector personalizado». <strong>ChatGPT</strong>: Ajustes → Aplicaciones (o Conectores) → crear una aplicación o conector personalizado, con autenticación OAuth. Según tu plan, puede que tengas que activar antes el modo desarrollador.</p>
+			<p class="description">Si tu asistente no admite el inicio de sesión, crea abajo una conexión con dirección privada.</p>
+		</div>
+
 		<?php if ( $created ) : ?>
 			<div class="notice notice-success" style="padding:12px 16px">
 				<p><strong>Conexión creada.</strong> Copia esta dirección ahora: por seguridad no se vuelve a mostrar. Es personal, no la compartas.</p>
@@ -548,7 +561,7 @@ function eg_pub_ai_admin_page() {
 			</div>
 		<?php endif; ?>
 
-		<h2>Conectar un asistente</h2>
+		<h2>Conexión con dirección privada</h2>
 		<?php if ( ! $mine ) : ?>
 			<p>Tu usuario no tiene permisos para ningún apartado de este servicio. Pide a un administrador de la web que te dé acceso.</p>
 		<?php else : ?>
@@ -580,11 +593,12 @@ function eg_pub_ai_admin_page() {
 			<form method="post">
 				<?php wp_nonce_field( 'eg_ai', 'eg_ai_nonce' ); ?>
 				<table class="widefat striped" style="max-width:60em">
-					<thead><tr><th>Nombre</th><th>Usuario</th><th>Puede</th><th>Creada</th><th>Último uso</th><th></th></tr></thead>
+					<thead><tr><th>Nombre</th><th>Tipo</th><th>Usuario</th><th>Puede</th><th>Creada</th><th>Último uso</th><th></th></tr></thead>
 					<tbody>
 					<?php foreach ( $conns as $id => $c ) : $pub = eg_pub_ai_connection_public( $id, $c ); ?>
 						<tr>
-							<td><?php echo esc_html( $pub['label'] ); ?> <code><?php echo esc_html( $pub['key_end'] ); ?></code></td>
+							<td><?php echo esc_html( $pub['label'] ); ?><?php echo 'url' === $pub['type'] ? ' <code>' . esc_html( $pub['key_end'] ) . '</code>' : ''; ?></td>
+							<td><?php echo 'oauth' === $pub['type'] ? 'Inicio de sesión' : 'Dirección privada'; ?></td>
 							<td><?php echo esc_html( (string) $pub['user'] ); ?></td>
 							<td><?php echo esc_html( implode( ', ', array_map( function ( $s ) use ( $scopes ) {
 								return $scopes[ $s ]['label'] ?? $s;

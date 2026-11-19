@@ -135,5 +135,21 @@ function eg_pub_backup_handle( WP_REST_Request $r ) {
 		}
 	}
 	$out['state'] = eg_pub_backup_state();
+	if ( ! empty( $r['log'] ) ) {
+		// Final del registro más reciente de UpdraftPlus (log.<nonce>.txt), para ver por qué no arranca o dónde se para.
+		$dir  = isset( $GLOBALS['updraftplus'] ) && method_exists( $GLOBALS['updraftplus'], 'backups_dir_location' ) ? $GLOBALS['updraftplus']->backups_dir_location() : WP_CONTENT_DIR . '/updraft';
+		$logs = (array) glob( trailingslashit( $dir ) . 'log.*.txt' );
+		usort( $logs, function ( $a, $b ) {
+			return filemtime( $b ) - filemtime( $a );
+		} );
+		if ( $logs ) {
+			$lines      = (array) file( $logs[0], FILE_IGNORE_NEW_LINES );
+			$out['log'] = array(
+				'file'  => basename( $logs[0] ),
+				'time'  => wp_date( 'Y-m-d H:i', filemtime( $logs[0] ) ),
+				'lines' => array_slice( $lines, -1 * max( 10, min( 300, (int) $r['log'] > 1 ? (int) $r['log'] : 60 ) ) ),
+			);
+		}
+	}
 	return new WP_REST_Response( $out, 200 );
 }

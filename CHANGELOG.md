@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.119.0 · 19/11/2026 · PR (Claude)
+
+- Nuevo módulo `/i18n-slugs` (Gestión de la web, requiere WPML): lista las traducciones publicadas cuyo slug sigue igual que el del original (`all: true` para todas), con su ruta, y con `redirects: true` las redirecciones de Redirection con avisos (`shadows_live` si tapan una página publicada, `chain`, `loop`). `set` (`{"<id>": "slug-nuevo"}`) cambia el slug y, para la entrada y sus hijas, crea la 301 de la URL vieja a la nueva, reapunta las redirecciones que iban a la vieja y desactiva las que tenían la nueva como origen. Borra el indexable de Yoast. Solo previsualiza; guarda con `apply: true`.
+- Nuevo módulo `/db-clean` (Gestión de la web): informe de lo que infla la base de datos (tablas más grandes, metadatos repetidos idénticos por clave, revisiones, borradores automáticos, papelera, transitorios caducados, metadatos huérfanos, opciones con carga automática, Action Scheduler, registros de Redirection) y limpieza por partes con `parts` + `apply: true` (`dup_meta`, `revisions` con `keep`, `auto_drafts`, `trash` de más de 30 días, `transients`, `orphan_meta`, `scheduler`, `redirection_logs`, `optimize`). No limpia si hay una copia de UpdraftPlus en curso.
+- Webs: hotelneptuno.com (URLs en castellano en las traducciones; `_elementor_data` repetido decenas de veces por traducción).
+
 ## 2.118.0 · 19/11/2026 · PR (Claude)
 
 - Nuevo módulo `/scripts` (tipología Gestión de la web, capacidad `unfiltered_html`): códigos de terceros (chat, píxeles, widgets) por clave, pegados tal cual los da el proveedor, en la cabecera (`position: "head"`), justo tras `<body>` (`"body"`) o en el pie (`"footer"`). Mismo funcionamiento que `/css`: `enabled` (nace apagado), `pages` (con WPML cuentan sus traducciones), `label`, historial de 10 versiones, `rollback`, `delete`; solo previsualiza y guarda con `apply: true`, vaciando la caché de WP Rocket. Para probar sin publicar: `?eg_js=<clave>`; `?eg_js=off` quita todos en esa visita.

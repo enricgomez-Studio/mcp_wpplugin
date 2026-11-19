@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.117.0 · 19/11/2026 · PR (Claude)
+
+- `/i18n-check` `fix`: escribe textos traducidos en varias traducciones de una vez, por la misma ruta que devuelve la revisión (`{"<id de traducción>": {"<id de elemento>": {"slides.0.heading": "…"}}}`). Solo cambia rutas que ya existen y son texto; previsualiza y guarda con `apply: true`, con copia en `_eg_pub_elementor_backup` y vaciado de caché de esa página. La revisión completa amplía el tiempo máximo de ejecución.
+- Webs: hotelneptuno.com.
+
 ## 2.116.0 · 19/11/2026 · PR (Claude)
 
 - `/i18n-check` `rows: true` (con `ids`): si una traducción tiene varias filas `_elementor_data`, detalla cada una (`meta_id`, `bytes`, `md5` y `same`, cuántos textos siguen iguales al original con esa fila), para ver si la traducción buena está en una fila que Elementor no usa. Ya no cuenta `slides_name` (nombre interno del repetidor).

@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.117.1 · 19/11/2026 · PR (Claude)
+
+- Seguridad, `/gateways`: el listado de ajustes de pasarelas tapaba solo los valores de primer nivel cuyo nombre parecía una clave. Ahora también tapa dentro de listas anidadas (p. ej. `webhook_data` de Stripe, que llevaba la clave secreta en claro), los nombres con `sha256` (claves de firma de Redsys) y cualquier valor con forma de clave (`sk_live_`, `sk_test_`, `whsec_`…) aunque el nombre no lo diga.
+- Webs: todas las que tienen el módulo Pedidos. Detectado en casanoguera.com.
+
 ## 2.117.0 · 19/11/2026 · PR (Claude)
 
 - `/i18n-check` `fix`: escribe textos traducidos en varias traducciones de una vez, por la misma ruta que devuelve la revisión (`{"<id de traducción>": {"<id de elemento>": {"slides.0.heading": "…"}}}`). Solo cambia rutas que ya existen y son texto; previsualiza y guarda con `apply: true`, con copia en `_eg_pub_elementor_backup` y vaciado de caché de esa página. La revisión completa amplía el tiempo máximo de ejecución.

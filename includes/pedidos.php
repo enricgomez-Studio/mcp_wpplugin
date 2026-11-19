@@ -171,10 +171,21 @@ function eg_pub_orders_handle( WP_REST_Request $r ) {
 	return new WP_REST_Response( $out, 200 );
 }
 
-/** Tapa los ajustes que parecen secretos (claves de firma, contraseñas, tokens). */
+/**
+ * Tapa los ajustes que parecen secretos (claves de firma, contraseñas, tokens), también dentro de listas anidadas
+ * (p. ej. webhook_data de Stripe) y cualquier valor con forma de clave aunque su nombre no lo diga (sk_live_, whsec_…).
+ */
 function eg_pub_gateways_mask( array $settings ) {
 	foreach ( $settings as $k => $v ) {
-		if ( is_scalar( $v ) && '' !== (string) $v && preg_match( '/clave|key|secret|password|pass|token|signature|firma/i', (string) $k ) ) {
+		if ( is_array( $v ) ) {
+			$settings[ $k ] = eg_pub_gateways_mask( $v );
+			continue;
+		}
+		if ( ! is_scalar( $v ) || '' === (string) $v ) {
+			continue;
+		}
+		if ( preg_match( '/clave|key|secret|password|pass|token|signature|firma|sha256|sha1/i', (string) $k )
+			|| preg_match( '/^(sk|rk|pk)_(live|test)_|^whsec_|^EAA|^access_token/i', (string) $v ) ) {
 			$settings[ $k ] = '••••' . substr( (string) $v, -4 );
 		}
 	}

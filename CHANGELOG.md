@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.114.0 · 19/11/2026 · PR (Claude, a petición de Enric)
+
+- Nuevo módulo «revision-idiomas» (tipología Gestión de la web): `POST /i18n-check`, solo lectura. Recorre las traducciones de WPML hechas con Elementor y devuelve los textos de cada widget que siguen idénticos al original en el idioma principal (también dentro de repetidores como las diapositivas). Filtros opcionales `langs`, `ids`, `widgets` y `full`. Los arreglos se hacen después con `/template patch`.
+- Webs: hotelneptuno.com (banners de diapositivas en castellano en las traducciones).
+
 ## 2.113.0 · 18/11/2026 · PR (Claude, a petición de Enric)
 
 - `/perf` `fixes`: nuevo ajuste `thumbs_webp`. Crea la copia `foto.png.webp` de cada miniatura a medida de Elementor (`uploads/elementor/thumbs`), que Imagify no convierte porque no está en la biblioteca de medios. Con el mismo nombre que usa Imagify, nginx la sirve con `try_files $uri.webp` cuando el navegador acepta WebP. Al activarlo convierte las que faltan (Imagick o GD, calidad 82; si el WebP pesa más no se guarda) y deja una tarea diaria de WP-Cron para las nuevas. Los originales no se tocan; con `false` se quita la tarea.

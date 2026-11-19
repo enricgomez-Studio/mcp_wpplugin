@@ -198,7 +198,9 @@ function eg_pub_slug_family( $id ) {
 	$post = get_post( $id );
 	$ids  = array( (int) $id );
 	if ( $post && is_post_type_hierarchical( $post->post_type ) ) {
-		$kids = get_posts( array( 'post_type' => $post->post_type, 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids', 'post_parent' => $id, 'suppress_filters' => true ) );
+		// Consulta directa: get_posts pasa por el filtro de idioma de WPML y no devuelve las hijas de una traducción.
+		global $wpdb;
+		$kids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_parent = %d AND post_type = %s AND post_status = 'publish'", $id, $post->post_type ) );
 		foreach ( $kids as $kid ) {
 			$ids = array_merge( $ids, eg_pub_slug_family( $kid ) );
 		}

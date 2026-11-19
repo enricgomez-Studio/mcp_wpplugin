@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.120.0 · 19/11/2026 · PR (Claude, a petición de Enric)
+
+- Nuevo servicio **Asistente IA** (perfil cliente): servidor MCP remoto propio en `/wp-json/eg/v1/mcp/<clave>` para que el cliente cree y edite posts del blog y productos de WooCommerce desde su propio Claude o ChatGPT. Nace apagado: se activa por web con `POST /assistant` (tipología Gestión de la web, clave X-EG-Key), con los ámbitos contratados (`blog`, `productos`), si puede publicar y las reglas de estilo de la web. Conexiones por usuario de WordPress, revocables, con registro de acciones, en el nuevo menú «Asistente IA» del escritorio. Sin borrar nada ni tocar páginas, ajustes o usuarios. Detalle en el README.
+- Webs: ninguna todavía (piloto para el lanzamiento de enero de 2027).
+
 ## 2.119.3 · 19/11/2026 · PR (Claude)
 
 - `/i18n-slugs` `set`: las páginas hijas de una traducción no entraban en el cambio (get_posts pasaba por el filtro de idioma de WPML) y se quedaban sin su 301. Ahora se buscan con una consulta directa.

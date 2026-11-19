@@ -81,6 +81,17 @@ Las mismas funciones se registran como Abilities de WordPress (categoría `eg-pu
 
 Con WordPress anterior a la 6.9 no se registra nada y el resto del plugin funciona igual.
 
+### Asistente IA para el cliente (desde la v2.120.0)
+
+Servicio de pago para que el cliente gestione su blog y sus productos desde su propio Claude, ChatGPT u otro asistente con conectores MCP. Es independiente de las Abilities: el plugin trae su propio servidor MCP remoto (Streamable HTTP, sin estado), porque claude.ai y ChatGPT necesitan un conector remoto y no aceptan contraseñas de aplicación.
+
+- **Nace apagado en todas las webs.** Se activa desde Make con la clave: `POST /wp-json/eg/v1/assistant` con `{"enabled": true, "scopes": ["blog", "productos"], "publish": true, "notes": "reglas de estilo"}`. `{}` devuelve el estado, las conexiones y las últimas acciones; `{"create": {"label": "…", "user": "usuario o email", "scopes": [...]}}` crea una conexión y devuelve su URL (solo esa vez); `{"revoke": "<id>"}` la revoca; `{"log": 50}` amplía el registro.
+- **Ámbitos**: `blog` (crear y editar posts, categorías, etiquetas, imagen destacada, SEO de Yoast o Rank Math, idioma de WPML) y `productos` (alta y edición de productos simples de WooCommerce: textos, precios, stock, categorías, imágenes y SEO; en los variables solo textos, imágenes, categorías, SEO y estado). Sin `publish`, todo queda pendiente de revisión.
+- **Conexiones**: el cliente las crea y revoca en el menú «Asistente IA» del escritorio (o nosotros con `create`). Cada una va ligada a un usuario de WordPress y se respetan sus permisos. La URL es `/wp-json/eg/v1/mcp/egai_…` (también vale `Authorization: Bearer egai_…`); solo se guarda su hash.
+- **Límites**: no borra nada ni toca páginas, ajustes, plugins o usuarios; no edita el contenido de posts maquetados con Elementor; 60 peticiones por minuto y conexión. Todas las acciones quedan en el registro (`eg_pub_ai_log`, últimas 200).
+- Herramientas: `site_info`, `upload_image`, `list_posts`, `get_post`, `create_post`, `update_post`, `list_products`, `get_product`, `create_product`, `update_product`.
+- Pendiente (fase 2): acceso con OAuth (iniciar sesión con el usuario de la web en lugar de la URL privada).
+
 ### Endpoints
 
 - `POST /wp-json/eg/v1/landing`: clona una página maestra de Elementor y crea (o actualiza) una página, en borrador salvo que se pida `status: publish`.

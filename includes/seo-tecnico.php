@@ -24,6 +24,8 @@
  *             la portada. rankmath_get {"titles": ["local_address"]} (o "*") devuelve los valores actuales.
  *   ga4       "G-XXXXXXX": imprime en el <head> de toda la web la etiqueta de Google Analytics 4 (gtag.js) con esa ID
  *             de medición. "" o null la quita. El estado devuelve la ID guardada.
+ *   hide_generator true/false: deja de publicar la versión de WordPress (meta generator, feeds y ?ver= de los
+ *             scripts y estilos del núcleo) y la meta generator de WooCommerce.
  * Como /seo y /rocket, los cambios solo se previsualizan; apply:true guarda y vacía la caché de WP Rocket.
  */
 
@@ -35,6 +37,7 @@ const EG_PUB_OPTION_BUSINESS = 'eg_pub_schema_business';
 const EG_PUB_OPTION_ROBOTS   = 'eg_pub_robots_extra';
 const EG_PUB_OPTION_AI_CAT   = 'eg_pub_ai_catalog';
 const EG_PUB_OPTION_GA4      = 'eg_pub_ga4_id';
+const EG_PUB_OPTION_NO_GEN   = 'eg_pub_hide_generator';
 
 add_filter( 'eg_pub_modules', function ( $modules ) {
 	$modules['seo-tecnico'] = array( 'type' => 'gestion', 'routes' => array( 'seo-tech' ) );
@@ -122,6 +125,25 @@ add_action( 'wp_head', function () {
 	echo '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $id . '"></script>' . "\n";
 	echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','" . $id . "');</script>\n";
 }, 1 );
+
+// Sin versión de WordPress a la vista (/seo-tech hide_generator).
+if ( get_option( EG_PUB_OPTION_NO_GEN ) ) {
+	add_action( 'init', function () {
+		remove_action( 'wp_head', 'wp_generator' );
+		remove_action( 'wp_head', 'wc_generator_tag' );
+	}, 99 );
+	add_filter( 'the_generator', '__return_empty_string', 99 );
+	add_filter( 'get_the_generator_html', '__return_empty_string', 99 );
+	add_filter( 'get_the_generator_xhtml', '__return_empty_string', 99 );
+	$eg_strip_ver = function ( $src ) {
+		if ( is_string( $src ) && false !== strpos( $src, 'ver=' . get_bloginfo( 'version' ) ) ) {
+			$src = remove_query_arg( 'ver', $src );
+		}
+		return $src;
+	};
+	add_filter( 'style_loader_src', $eg_strip_ver, 99 );
+	add_filter( 'script_loader_src', $eg_strip_ver, 99 );
+}
 
 add_filter( 'robots_txt', function ( $output ) {
 	$extra = trim( (string) get_option( EG_PUB_OPTION_ROBOTS, '' ) );
@@ -376,6 +398,16 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 			}
 		}
 	}
+	if ( array_key_exists( 'hide_generator', $p ) ) {
+		$before = (bool) get_option( EG_PUB_OPTION_NO_GEN, false );
+		$after  = rest_sanitize_boolean( $p['hide_generator'] );
+		if ( $before !== $after ) {
+			$out['changes']['hide_generator'] = array( 'before' => $before, 'after' => $after );
+			if ( $apply ) {
+				update_option( EG_PUB_OPTION_NO_GEN, $after ? 1 : 0, true );
+			}
+		}
+	}
 	if ( array_key_exists( 'rankmath_modules', $p ) ) {
 		if ( ! class_exists( '\\RankMath\\Helper' ) ) {
 			return eg_pub_error( 'eg_rankmath', 'Rank Math no está activo en esta web.' );
@@ -458,6 +490,7 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 		'ai_catalog'      => get_option( EG_PUB_OPTION_AI_CAT, array() ) ? home_url( '/.well-known/ai-catalog.json' ) : null,
 		'wpml_hreflang'   => eg_pub_seo_tech_wpml_hreflang(),
 		'ga4'             => (string) get_option( EG_PUB_OPTION_GA4, '' ),
+		'hide_generator'  => (bool) get_option( EG_PUB_OPTION_NO_GEN, false ),
 		'yoast'           => defined( 'WPSEO_VERSION' ) ? WPSEO_VERSION : null,
 		'yoast_company'   => defined( 'WPSEO_VERSION' ) ? ( (array) get_option( 'wpseo_titles', array() ) )['company_or_person'] ?? null : null,
 	);

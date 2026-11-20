@@ -14,7 +14,8 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - `/product shop_settings` admite también ajustes del pago de WooCommerce: `sell_countries` (`["ES"]`: vende y envía solo a esos países; `[]` vuelve a todos), `phone_required` (teléfono obligatorio u opcional), `terms_page` (ID de la página de condiciones: WooCommerce pide aceptarlas con casilla y enlace; `0` lo quita) y `hide_paid_when_free` (si el pedido tiene envío gratuito, oculta las tarifas de pago y deja solo el gratuito y la recogida en tienda). El guardián SSH no deja guardar opciones con listas, por eso van aquí.
 - `/seo-tech hide_generator: true` deja de publicar la versión de WordPress (meta generator, feeds y `?ver=` de los archivos del núcleo) y la meta generator de WooCommerce. El estado devuelve `hide_generator`.
-- Tipología WooCommerce (módulo `productos`) y Gestión de la web (`seo-tech`). Webs: comprabarbacoa.com (revisión previa a la publicación).
+- `/text` rechaza `replace` en forma de lista de cadenas (`["a", "b"]`): tomaba los índices 0, 1… como texto a buscar y cambiaba todos los dígitos de la web. Siguen valiendo `{"de": "a"}` y `[{"from": "...", "to": "..."}]`.
+- Tipología WooCommerce (módulo `productos`), Gestión de la web (`seo-tech`) y módulo `textos`. Webs: comprabarbacoa.com (revisión previa a la publicación).
 
 ## 2.123.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 

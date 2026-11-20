@@ -124,7 +124,12 @@ function eg_pub_text_handle( WP_REST_Request $r ) {
 	$p       = $r->get_params();
 	$needles = array_values( array_filter( array_map( 'strval', (array) ( $p['search'] ?? array() ) ), 'strlen' ) );
 	$pairs   = array();
-	foreach ( (array) ( $p['replace'] ?? array() ) as $from => $to ) {
+	$replace = (array) ( $p['replace'] ?? array() );
+	// Una lista de cadenas (["a", "b"]) tomaría los índices 0, 1… como texto a buscar y cambiaría cada dígito de la web.
+	if ( $replace && array_keys( $replace ) === range( 0, count( $replace ) - 1 ) && ! is_array( reset( $replace ) ) ) {
+		return eg_pub_error( 'eg_text_replace', 'replace tiene que ser un objeto {"de": "a"} o una lista [{"from": "...", "to": "..."}], no una lista de cadenas.' );
+	}
+	foreach ( $replace as $from => $to ) {
 		if ( is_array( $to ) ) { // Admite [{"from": "...", "to": "..."}] además de {"de": "a"}.
 			$from = (string) ( $to['from'] ?? '' );
 			$to   = (string) ( $to['to'] ?? '' );

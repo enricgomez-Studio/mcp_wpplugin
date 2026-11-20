@@ -27,6 +27,11 @@
  *                              "ajax_single": true, "redirect_to_cart": false} los cambia (con apply: true). ajax_archive es
  *                              el AJAX de WooCommerce en listados, ajax_single el AJAX de la ficha de JetWooBuilder (si está
  *                              activo) y redirect_to_cart si tras añadir se va al carrito.
+ *                              También: sell_countries ["ES"] (vende y envía solo a esos países; [] = a todos),
+ *                              phone_required true/false (teléfono obligatorio en el pago), terms_page ID de la página de
+ *                              condiciones (WooCommerce pide aceptar las condiciones con casilla y enlace; 0 lo quita) y
+ *                              hide_paid_when_free true/false (si hay envío gratuito, oculta las tarifas de pago y deja solo
+ *                              el gratuito y la recogida en tienda).
  * recount_ratings recalcula la valoración media, el recuento de estrellas y el número de reseñas a partir de las
  *                              reseñas aprobadas (lo mismo que hace WooCommerce al aprobar una reseña), para corregir
  *                              valores guardados desfasados (p. ej. ratingValue 0 con reseñas en el schema de Google).
@@ -117,19 +122,73 @@ function eg_pub_shop_settings_get() {
 	if ( is_array( $jet ) ) {
 		$out['ajax_single'] = 'yes' === ( $jet['use_ajax_add_to_cart'] ?? 'no' );
 	}
+	$out['sell_countries']      = 'specific' === get_option( 'woocommerce_allowed_countries', 'all' )
+		? array_values( (array) get_option( 'woocommerce_specific_allowed_countries', array() ) ) : array();
+	$out['phone_required']      = 'required' === get_option( 'woocommerce_checkout_phone_field', 'required' );
+	$out['terms_page']          = (int) get_option( 'woocommerce_terms_page_id', 0 );
+	$out['hide_paid_when_free'] = (bool) get_option( EG_PUB_HIDE_PAID_SHIPPING, false );
 	return $out;
 }
+
+const EG_PUB_HIDE_PAID_SHIPPING = 'eg_pub_hide_paid_shipping_when_free';
+
+// Con envío gratuito disponible, solo se ofrecen el gratuito y la recogida en tienda (shop_settings hide_paid_when_free).
+add_filter( 'woocommerce_package_rates', function ( $rates ) {
+	if ( ! get_option( EG_PUB_HIDE_PAID_SHIPPING ) || ! is_array( $rates ) ) {
+		return $rates;
+	}
+	$keep = array();
+	foreach ( $rates as $id => $rate ) {
+		if ( is_object( $rate ) && method_exists( $rate, 'get_method_id' ) && 'free_shipping' === $rate->get_method_id() ) {
+			$keep[ $id ] = $rate;
+		}
+	}
+	if ( ! $keep ) {
+		return $rates;
+	}
+	foreach ( $rates as $id => $rate ) {
+		if ( is_object( $rate ) && method_exists( $rate, 'get_method_id' ) && 'local_pickup' === $rate->get_method_id() ) {
+			$keep[ $id ] = $rate;
+		}
+	}
+	return $keep;
+}, 100 );
 
 /** /product shop_settings: previsualiza y, con apply, guarda los ajustes de añadir al carrito. */
 function eg_pub_shop_settings_handle( $set, $apply ) {
 	$before = eg_pub_shop_settings_get();
 	$after  = $before;
-	foreach ( array( 'ajax_archive', 'redirect_to_cart', 'ajax_single' ) as $key ) {
+	foreach ( array( 'ajax_archive', 'redirect_to_cart', 'ajax_single', 'phone_required', 'hide_paid_when_free' ) as $key ) {
 		if ( array_key_exists( $key, $set ) && array_key_exists( $key, $before ) ) {
 			$after[ $key ] = rest_sanitize_boolean( $set[ $key ] );
 		}
 	}
+	if ( array_key_exists( 'sell_countries', $set ) ) {
+		$valid = function_exists( 'WC' ) && WC()->countries ? array_keys( WC()->countries->get_countries() ) : array();
+		$codes = array();
+		foreach ( (array) $set['sell_countries'] as $code ) {
+			$code = strtoupper( sanitize_key( (string) $code ) );
+			if ( '' !== $code && ( ! $valid || in_array( $code, $valid, true ) ) && ! in_array( $code, $codes, true ) ) {
+				$codes[] = $code;
+			}
+		}
+		$after['sell_countries'] = $codes;
+	}
+	if ( array_key_exists( 'terms_page', $set ) ) {
+		$page                = absint( $set['terms_page'] );
+		$after['terms_page'] = ( $page && 'page' === get_post_type( $page ) ) ? $page : 0;
+	}
 	if ( $apply && $after !== $before ) {
+		if ( $after['sell_countries'] ) {
+			update_option( 'woocommerce_allowed_countries', 'specific' );
+			update_option( 'woocommerce_specific_allowed_countries', $after['sell_countries'] );
+			update_option( 'woocommerce_ship_to_countries', '' );
+		} elseif ( $before['sell_countries'] ) {
+			update_option( 'woocommerce_allowed_countries', 'all' );
+		}
+		update_option( 'woocommerce_checkout_phone_field', $after['phone_required'] ? 'required' : 'optional' );
+		update_option( 'woocommerce_terms_page_id', $after['terms_page'] ? (string) $after['terms_page'] : '' );
+		update_option( EG_PUB_HIDE_PAID_SHIPPING, $after['hide_paid_when_free'] ? 1 : 0 );
 		update_option( 'woocommerce_enable_ajax_add_to_cart', $after['ajax_archive'] ? 'yes' : 'no' );
 		update_option( 'woocommerce_cart_redirect_after_add', $after['redirect_to_cart'] ? 'yes' : 'no' );
 		if ( array_key_exists( 'ajax_single', $after ) ) {

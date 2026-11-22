@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.124.0 · 22/11/2026 · PR (Claude, a petición de Enric)
+
+- **Aviso al cliente de cada post nuevo** (`includes/aviso-cliente.php`, siempre activo): cuando un post programado desde Make se publica, en el mismo momento que el aviso por email a Enric, la web manda los datos del post (dominio, título, extracto, imagen destacada, enlaces de todas las traducciones WPML) a un único escenario de Make del estudio, que busca al cliente en Notion (Clientes → sección «Avisos blog») y deja el correo preparado en Gmail. Si el dominio no tiene ficha o avisos en Notion, no pasa nada. Una vez por post (`_eg_client_noticed`).
+- Nuevo `POST /client-notice`: estado y últimos envíos; `enabled: false` lo apaga en una web; `post_id`/`path` devuelve los datos que se mandarían y con `send: true` los manda (como prueba salvo `test: false`).
+- Webs: todas al actualizar (los borradores solo salen para los clientes con avisos activados en Notion).
+
 ## 2.123.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 
 - `/rocket` acepta `clear_hints: true`: borra los «elementos prioritarios» de WP Rocket (Performance Hints: imagen crítica precargada, fuentes, preconnect y lazy render) con el mismo filtro que el botón «Limpiar elementos prioritarios» de su barra, y vacía la caché de páginas. Sirve cuando Rocket sigue precargando una imagen que ya no está en la página. La respuesta trae `hints` con el resultado.

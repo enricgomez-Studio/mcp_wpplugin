@@ -199,6 +199,10 @@ function eg_pub_promo_handle( WP_REST_Request $request ) {
 	$p     = (array) $request->get_json_params();
 	$apply = ! empty( $p['apply'] );
 
+	if ( is_array( $p['purge_at'] ?? null ) ) {
+		$times = array_map( 'eg_pub_promo_time', array_map( 'strval', $p['purge_at'] ) );
+		return new WP_REST_Response( array( 'ok' => true, 'applied' => $apply, 'purges' => $apply ? eg_pub_promo_schedule_purges( $times ) : array_map( 'eg_pub_promo_local', array_filter( $times ) ) ), 200 );
+	}
 	if ( array_key_exists( 'closure', $p ) ) {
 		return eg_pub_promo_closure_handle( $p['closure'], $apply );
 	}

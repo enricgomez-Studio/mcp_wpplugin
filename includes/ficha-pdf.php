@@ -7,6 +7,8 @@
  *   «Campo personalizado» (clave `ficha_tecnica_pdf`) y JetEngine puede registrarlo con el mismo nombre.
  * - Visibilidad condicional en Elementor: un contenedor, sección o widget con la clase CSS `eg-si-meta-<clave>`
  *   (p. ej. `eg-si-meta-ficha_tecnica_pdf`) solo se pinta si la entrada actual tiene ese metadato con valor.
+ *   Con `eg-desde-AAAAMMDDHHMM` y/o `eg-hasta-AAAAMMDDHHMM` (hora de la web) solo se pinta dentro de ese intervalo,
+ *   p. ej. un banner de Black Friday con `eg-desde-202611230000 eg-hasta-202611302359`.
  * - POST /wp-json/eg/v1/ficha-pdf: pasa los PDF de la descripción al campo.
  *     Sin parámetros: estado (productos con campo, productos con un enlace .pdf aún en la descripción).
  *     migrate: true   en cada producto busca el primer enlace .pdf de la descripción, lo guarda en el campo y quita
@@ -99,12 +101,32 @@ function eg_pub_meta_condition_ok( $element ) {
 	return true;
 }
 
+/**
+ * true si el elemento no lleva las clases eg-desde-AAAAMMDDHHMM / eg-hasta-AAAAMMDDHHMM o si ahora (hora de la web)
+ * está dentro de ese intervalo. Sirve para banners de campañas que se encienden y apagan solos.
+ */
+function eg_pub_date_condition_ok( $element ) {
+	$settings = $element->get_settings();
+	$classes  = ' ' . (string) ( $settings['_css_classes'] ?? '' ) . ' ' . (string) ( $settings['css_classes'] ?? '' ) . ' ';
+	if ( false === strpos( $classes, ' eg-desde-' ) && false === strpos( $classes, ' eg-hasta-' ) ) {
+		return true;
+	}
+	$now = current_time( 'YmdHi' );
+	if ( preg_match( '/\seg-desde-(\d{12})\s/', $classes, $m ) && $now < $m[1] ) {
+		return false;
+	}
+	if ( preg_match( '/\seg-hasta-(\d{12})\s/', $classes, $m ) && $now > $m[1] ) {
+		return false;
+	}
+	return true;
+}
+
 foreach ( array( 'widget', 'container', 'section', 'column' ) as $eg_pub_type ) {
 	add_filter( "elementor/frontend/{$eg_pub_type}/should_render", function ( $should, $element ) {
 		if ( ! $should || ( class_exists( '\Elementor\Plugin' ) && \Elementor\Plugin::$instance->editor->is_edit_mode() ) ) {
 			return $should;
 		}
-		return eg_pub_meta_condition_ok( $element );
+		return eg_pub_meta_condition_ok( $element ) && eg_pub_date_condition_ok( $element );
 	}, 10, 2 );
 }
 unset( $eg_pub_type );
@@ -117,7 +139,7 @@ unset( $eg_pub_type );
 add_filter( 'elementor/element/is_dynamic_content', function ( $dynamic, $raw_data ) {
 	$settings = (array) ( $raw_data['settings'] ?? array() );
 	$classes  = (string) ( $settings['_css_classes'] ?? '' ) . ' ' . (string) ( $settings['css_classes'] ?? '' );
-	return $dynamic || false !== strpos( $classes, 'eg-si-meta-' );
+	return $dynamic || false !== strpos( $classes, 'eg-si-meta-' ) || false !== strpos( $classes, 'eg-desde-' ) || false !== strpos( $classes, 'eg-hasta-' );
 }, 10, 2 );
 
 /* ---------- Migración desde la descripción ---------- */

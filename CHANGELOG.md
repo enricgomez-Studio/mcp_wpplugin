@@ -10,7 +10,7 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
-## 2.126.0 · 23/11/2026 · PR (Claude, a petición de Enric)
+## 2.126.0 · 23/11/2026 · PR #194 (Claude, a petición de Enric)
 
 - Elementor: un contenedor, sección o widget con las clases `eg-desde-AAAAMMDDHHMM` y/o `eg-hasta-AAAAMMDDHHMM` (hora de la web) solo se pinta dentro de ese intervalo, p. ej. `eg-desde-202611230000 eg-hasta-202611302359` para los banners de Black Friday. Se marcan como dinámicos para la caché de elementos de Elementor.
 - `/promo purge_at` (`["2026-11-30 23:59"]`) deja programado el vaciado de la caché de WP Rocket en esos momentos, para que los banners con fecha se apaguen también en la caché de página. Solo previsualiza; guarda con `apply: true`.

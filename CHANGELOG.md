@@ -10,12 +10,18 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
-## 2.124.0 · 20/11/2026 · PR (Claude, a petición de Enric)
+## 2.125.0 · 22/11/2026 · PR (Claude, a petición de Enric)
 
 - `/product shop_settings` admite también ajustes del pago de WooCommerce: `sell_countries` (`["ES"]`: vende y envía solo a esos países; `[]` vuelve a todos), `phone_required` (teléfono obligatorio u opcional), `terms_page` (ID de la página de condiciones: WooCommerce pide aceptarlas con casilla y enlace; `0` lo quita) y `hide_paid_when_free` (si el pedido tiene envío gratuito, oculta las tarifas de pago y deja solo el gratuito y la recogida en tienda). El guardián SSH no deja guardar opciones con listas, por eso van aquí.
 - `/seo-tech hide_generator: true` deja de publicar la versión de WordPress (meta generator, feeds y `?ver=` de los archivos del núcleo) y la meta generator de WooCommerce. El estado devuelve `hide_generator`.
 - `/text` rechaza `replace` en forma de lista de cadenas (`["a", "b"]`): tomaba los índices 0, 1… como texto a buscar y cambiaba todos los dígitos de la web. Siguen valiendo `{"de": "a"}` y `[{"from": "...", "to": "..."}]`.
 - Tipología WooCommerce (módulo `productos`), Gestión de la web (`seo-tech`) y módulo `textos`. Webs: comprabarbacoa.com (revisión previa a la publicación).
+
+## 2.124.0 · 22/11/2026 · PR (Claude, a petición de Enric)
+
+- **Aviso al cliente de cada post nuevo** (`includes/aviso-cliente.php`, siempre activo): cuando un post programado desde Make se publica, en el mismo momento que el aviso por email a Enric, la web manda los datos del post (dominio, título, extracto, imagen destacada, enlaces de todas las traducciones WPML) a un único escenario de Make del estudio, que busca al cliente en Notion (Clientes → sección «Avisos blog») y deja el correo preparado en Gmail. Si el dominio no tiene ficha o avisos en Notion, no pasa nada. Una vez por post (`_eg_client_noticed`).
+- Nuevo `POST /client-notice`: estado y últimos envíos; `enabled: false` lo apaga en una web; `post_id`/`path` devuelve los datos que se mandarían y con `send: true` los manda (como prueba salvo `test: false`).
+- Webs: todas al actualizar (los borradores solo salen para los clientes con avisos activados en Notion).
 
 ## 2.123.0 · 19/11/2026 · PR (Claude, a petición de Enric)
 

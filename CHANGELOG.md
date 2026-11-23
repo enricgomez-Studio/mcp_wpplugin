@@ -13,6 +13,7 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 ## 2.127.0 · 23/11/2026 · PR (Claude, a petición de Enric)
 
 - `/product shop_settings` admite `exclude_states` (p. ej. `["ES:PM","ES:GC","ES:TF","ES:CE","ES:ML"]`: quita esas provincias de las direcciones de facturación y envío, para vender solo a la península; `[]` las vuelve a poner) y `order_emails` (destinatarios de los avisos de pedido nuevo, cancelado y fallido). La respuesta trae `shipping_zones` (zonas, regiones y métodos de envío, solo lectura).
+- `/product set` admite `length`, `width` y `height` (medidas del producto) y la lista devuelve `dimensions`.
 - Tipología WooCommerce (módulo `productos`). Webs: comprabarbacoa.com (Josep: solo península y avisos a info@casanoguera.com e info@comprabarbacoa.com).
 
 ## 2.126.0 · 23/11/2026 · PR #194 (Claude, a petición de Enric)

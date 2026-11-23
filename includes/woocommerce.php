@@ -15,6 +15,7 @@
  *   regular_price, sale_price    precio normal y rebajado ("" quita la rebaja)
  *   sale_from, sale_to           fechas de la rebaja (AAAA-MM-DD o AAAA-MM-DD HH:MM, hora de la web; "" la quita)
  *   sku, weight, stock_status    SKU, peso (en la unidad de la tienda) e instock/outofstock/onbackorder
+ *   length, width, height       medidas (largo, ancho y alto, en la unidad de la tienda)
  *   status                       publish, draft, private o pending (también saca el producto de la papelera)
  *   image, gallery               imagen principal y galería: ID de la biblioteca, URL o {"url"|"b64", "alt", "filename"}
  *   upsell_ids, cross_sell_ids   productos relacionados: ventas dirigidas («Quizás te interese…» en la ficha) y
@@ -659,6 +660,7 @@ function eg_pub_product_list() {
 			'on_sale'       => $product->is_on_sale(),
 			'price'         => $product->get_price(),
 			'weight'        => $product->get_weight(),
+			'dimensions'    => array( 'length' => $product->get_length(), 'width' => $product->get_width(), 'height' => $product->get_height() ),
 			'stock_status'  => $product->get_stock_status(),
 			'categories'    => wp_get_post_terms( $id, 'product_cat', array( 'fields' => 'slugs' ) ),
 			'tags'          => wp_get_post_terms( $id, 'product_tag', array( 'fields' => 'slugs' ) ),
@@ -719,18 +721,18 @@ function eg_pub_product_create( $create, $dry_run ) {
 
 /** Aplica al producto (sin guardarlo) los campos de WooCommerce de $c y devuelve el producto y los cambios. */
 function eg_pub_product_wc_changes( $id, $c, $dry_run, &$notes ) {
-	$keys = array( 'regular_price', 'sale_price', 'sale_from', 'sale_to', 'sku', 'weight', 'stock_status', 'image', 'gallery', 'upsell_ids', 'cross_sell_ids' );
+	$keys = array( 'regular_price', 'sale_price', 'sale_from', 'sale_to', 'sku', 'weight', 'length', 'width', 'height', 'stock_status', 'image', 'gallery', 'upsell_ids', 'cross_sell_ids' );
 	if ( ! array_intersect( $keys, array_keys( $c ) ) ) {
 		return array( 'product' => null, 'changes' => array() );
 	}
 	$product = wc_get_product( $id );
 	$changes = array();
-	foreach ( array( 'regular_price', 'sale_price', 'sku', 'weight', 'stock_status' ) as $key ) {
+	foreach ( array( 'regular_price', 'sale_price', 'sku', 'weight', 'length', 'width', 'height', 'stock_status' ) as $key ) {
 		if ( ! array_key_exists( $key, $c ) ) {
 			continue;
 		}
 		$value = (string) $c[ $key ];
-		if ( in_array( $key, array( 'regular_price', 'sale_price', 'weight' ), true ) ) {
+		if ( in_array( $key, array( 'regular_price', 'sale_price', 'weight', 'length', 'width', 'height' ), true ) ) {
 			$value = '' === $value ? '' : wc_format_decimal( str_replace( ',', '.', $value ) );
 		} else {
 			$value = sanitize_text_field( $value );

@@ -15,6 +15,7 @@
  *   regular_price, sale_price    precio normal y rebajado ("" quita la rebaja)
  *   sale_from, sale_to           fechas de la rebaja (AAAA-MM-DD o AAAA-MM-DD HH:MM, hora de la web; "" la quita)
  *   sku, weight, stock_status    SKU, peso (en la unidad de la tienda) e instock/outofstock/onbackorder
+ *   length, width, height       medidas (largo, ancho y alto, en la unidad de la tienda)
  *   status                       publish, draft, private o pending (también saca el producto de la papelera)
  *   image, gallery               imagen principal y galería: ID de la biblioteca, URL o {"url"|"b64", "alt", "filename"}
  *   upsell_ids, cross_sell_ids   productos relacionados: ventas dirigidas («Quizás te interese…» en la ficha) y
@@ -32,6 +33,10 @@
  *                              condiciones (WooCommerce pide aceptar las condiciones con casilla y enlace; 0 lo quita) y
  *                              hide_paid_when_free true/false (si hay envío gratuito, oculta las tarifas de pago y deja solo
  *                              el gratuito y la recogida en tienda).
+ *                              exclude_states ["ES:PM","ES:GC","ES:TF","ES:CE","ES:ML"] quita esas provincias de las
+ *                              direcciones de facturación y envío (p. ej. vender solo a la península; [] las vuelve a poner).
+ *                              order_emails ["a@x.com","b@y.com"] son los destinatarios de los avisos de pedido nuevo,
+ *                              cancelado y fallido. La respuesta incluye shipping_zones (zonas y métodos, solo lectura).
  * recount_ratings recalcula la valoración media, el recuento de estrellas y el número de reseñas a partir de las
  *                              reseñas aprobadas (lo mismo que hace WooCommerce al aprobar una reseña), para corregir
  *                              valores guardados desfasados (p. ej. ratingValue 0 con reseñas en el schema de Google).
@@ -127,7 +132,54 @@ function eg_pub_shop_settings_get() {
 	$out['phone_required']      = 'required' === get_option( 'woocommerce_checkout_phone_field', 'required' );
 	$out['terms_page']          = (int) get_option( 'woocommerce_terms_page_id', 0 );
 	$out['hide_paid_when_free'] = (bool) get_option( EG_PUB_HIDE_PAID_SHIPPING, false );
+	$out['exclude_states']      = array_values( (array) get_option( EG_PUB_EXCLUDE_STATES, array() ) );
+	$new                        = (array) get_option( 'woocommerce_new_order_settings', array() );
+	$rcpt                       = isset( $new['recipient'] ) && '' !== $new['recipient'] ? $new['recipient'] : get_option( 'admin_email' );
+	$out['order_emails']        = array_values( array_filter( array_map( 'trim', explode( ',', (string) $rcpt ) ) ) );
 	return $out;
+}
+
+/** Zonas de envío con sus regiones y métodos (solo lectura, para revisar desde /product shop_settings). */
+function eg_pub_shipping_zones_summary() {
+	if ( ! class_exists( 'WC_Shipping_Zones' ) ) {
+		return array();
+	}
+	$out   = array();
+	$zones = WC_Shipping_Zones::get_zones();
+	$zones[] = array( 'zone_id' => 0 );
+	foreach ( $zones as $z ) {
+		$zone    = new WC_Shipping_Zone( (int) $z['zone_id'] );
+		$methods = array();
+		foreach ( $zone->get_shipping_methods() as $m ) {
+			$methods[] = array( 'id' => $m->id, 'title' => $m->get_title(), 'enabled' => 'yes' === $m->enabled, 'cost' => $m->get_option( 'cost', '' ), 'min_amount' => $m->get_option( 'min_amount', '' ) );
+		}
+		$out[] = array(
+			'id'      => $zone->get_id(),
+			'name'    => $zone->get_id() ? $zone->get_zone_name() : 'Resto del mundo',
+			'regions' => array_map( function ( $l ) { return $l->code; }, $zone->get_zone_locations() ),
+			'methods' => $methods,
+		);
+	}
+	return $out;
+}
+
+const EG_PUB_EXCLUDE_STATES = 'eg_pub_exclude_states';
+
+// Provincias quitadas de las direcciones (shop_settings exclude_states), p. ej. Baleares y Canarias para vender solo a la península.
+foreach ( array( 'woocommerce_countries_allowed_country_states', 'woocommerce_countries_shipping_country_states' ) as $eg_pub_states_hook ) {
+	add_filter( $eg_pub_states_hook, function ( $states ) {
+		$exclude = (array) get_option( EG_PUB_EXCLUDE_STATES, array() );
+		if ( ! $exclude || ! is_array( $states ) ) {
+			return $states;
+		}
+		foreach ( $exclude as $code ) {
+			list( $country, $state ) = array_pad( explode( ':', (string) $code, 2 ), 2, '' );
+			if ( isset( $states[ $country ][ $state ] ) ) {
+				unset( $states[ $country ][ $state ] );
+			}
+		}
+		return $states;
+	} );
 }
 
 const EG_PUB_HIDE_PAID_SHIPPING = 'eg_pub_hide_paid_shipping_when_free';
@@ -178,6 +230,23 @@ function eg_pub_shop_settings_handle( $set, $apply ) {
 		$page                = absint( $set['terms_page'] );
 		$after['terms_page'] = ( $page && 'page' === get_post_type( $page ) ) ? $page : 0;
 	}
+	if ( array_key_exists( 'exclude_states', $set ) ) {
+		$all  = function_exists( 'WC' ) && WC()->countries ? WC()->countries->get_states() : array();
+		$list = array();
+		foreach ( (array) $set['exclude_states'] as $code ) {
+			list( $country, $state ) = array_pad( explode( ':', strtoupper( trim( (string) $code ) ), 2 ), 2, '' );
+			if ( '' !== $state && isset( $all[ $country ][ $state ] ) && ! in_array( "$country:$state", $list, true ) ) {
+				$list[] = "$country:$state";
+			}
+		}
+		$after['exclude_states'] = $list;
+	}
+	if ( array_key_exists( 'order_emails', $set ) ) {
+		$emails = array_values( array_unique( array_filter( array_map( 'sanitize_email', (array) $set['order_emails'] ) ) ) );
+		if ( $emails ) {
+			$after['order_emails'] = $emails;
+		}
+	}
 	if ( $apply && $after !== $before ) {
 		if ( $after['sell_countries'] ) {
 			update_option( 'woocommerce_allowed_countries', 'specific' );
@@ -189,6 +258,14 @@ function eg_pub_shop_settings_handle( $set, $apply ) {
 		update_option( 'woocommerce_checkout_phone_field', $after['phone_required'] ? 'required' : 'optional' );
 		update_option( 'woocommerce_terms_page_id', $after['terms_page'] ? (string) $after['terms_page'] : '' );
 		update_option( EG_PUB_HIDE_PAID_SHIPPING, $after['hide_paid_when_free'] ? 1 : 0 );
+		update_option( EG_PUB_EXCLUDE_STATES, $after['exclude_states'] );
+		if ( $after['order_emails'] !== $before['order_emails'] ) {
+			foreach ( array( 'woocommerce_new_order_settings', 'woocommerce_cancelled_order_settings', 'woocommerce_failed_order_settings' ) as $opt ) {
+				$cfg              = (array) get_option( $opt, array() );
+				$cfg['recipient'] = implode( ', ', $after['order_emails'] );
+				update_option( $opt, $cfg );
+			}
+		}
 		update_option( 'woocommerce_enable_ajax_add_to_cart', $after['ajax_archive'] ? 'yes' : 'no' );
 		update_option( 'woocommerce_cart_redirect_after_add', $after['redirect_to_cart'] ? 'yes' : 'no' );
 		if ( array_key_exists( 'ajax_single', $after ) ) {
@@ -200,7 +277,7 @@ function eg_pub_shop_settings_handle( $set, $apply ) {
 			rocket_clean_domain();
 		}
 	}
-	return new WP_REST_Response( array( 'ok' => true, 'applied' => (bool) $apply, 'before' => $before, 'shop_settings' => $after ), 200 );
+	return new WP_REST_Response( array( 'ok' => true, 'applied' => (bool) $apply, 'before' => $before, 'shop_settings' => $after, 'shipping_zones' => eg_pub_shipping_zones_summary() ), 200 );
 }
 
 /** Campos de meta que se pueden cambiar: los de JetEngine para productos y los de SEO de Rank Math. */
@@ -583,6 +660,7 @@ function eg_pub_product_list() {
 			'on_sale'       => $product->is_on_sale(),
 			'price'         => $product->get_price(),
 			'weight'        => $product->get_weight(),
+			'dimensions'    => array( 'length' => $product->get_length(), 'width' => $product->get_width(), 'height' => $product->get_height() ),
 			'stock_status'  => $product->get_stock_status(),
 			'categories'    => wp_get_post_terms( $id, 'product_cat', array( 'fields' => 'slugs' ) ),
 			'tags'          => wp_get_post_terms( $id, 'product_tag', array( 'fields' => 'slugs' ) ),
@@ -643,18 +721,18 @@ function eg_pub_product_create( $create, $dry_run ) {
 
 /** Aplica al producto (sin guardarlo) los campos de WooCommerce de $c y devuelve el producto y los cambios. */
 function eg_pub_product_wc_changes( $id, $c, $dry_run, &$notes ) {
-	$keys = array( 'regular_price', 'sale_price', 'sale_from', 'sale_to', 'sku', 'weight', 'stock_status', 'image', 'gallery', 'upsell_ids', 'cross_sell_ids' );
+	$keys = array( 'regular_price', 'sale_price', 'sale_from', 'sale_to', 'sku', 'weight', 'length', 'width', 'height', 'stock_status', 'image', 'gallery', 'upsell_ids', 'cross_sell_ids' );
 	if ( ! array_intersect( $keys, array_keys( $c ) ) ) {
 		return array( 'product' => null, 'changes' => array() );
 	}
 	$product = wc_get_product( $id );
 	$changes = array();
-	foreach ( array( 'regular_price', 'sale_price', 'sku', 'weight', 'stock_status' ) as $key ) {
+	foreach ( array( 'regular_price', 'sale_price', 'sku', 'weight', 'length', 'width', 'height', 'stock_status' ) as $key ) {
 		if ( ! array_key_exists( $key, $c ) ) {
 			continue;
 		}
 		$value = (string) $c[ $key ];
-		if ( in_array( $key, array( 'regular_price', 'sale_price', 'weight' ), true ) ) {
+		if ( in_array( $key, array( 'regular_price', 'sale_price', 'weight', 'length', 'width', 'height' ), true ) ) {
 			$value = '' === $value ? '' : wc_format_decimal( str_replace( ',', '.', $value ) );
 		} else {
 			$value = sanitize_text_field( $value );

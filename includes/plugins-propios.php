@@ -11,6 +11,8 @@
  *   remove: "gdpr-cookie-compliance"  desactiva y BORRA un plugin de cookies de terceros (lista cerrada,
  *                           filtro eg_pub_removable_cookie_plugins), solo si EG Cookies está activo y encendido:
  *                           EG Cookies debe ser el único aviso de la web. Sin apply:true solo previsualiza.
+ *                           También quita plugins que EG Studio ya sustituye (filtro eg_pub_replaceable_plugins):
+ *                           "google-site-kit" (solo con GA4 puesto en /seo-tech ga4) y "wp-consent-api" (sin Site Kit).
  * Solo se pueden instalar los plugins de la lista (filtro eg_pub_own_plugins), siempre desde sus releases de GitHub.
  */
 
@@ -143,12 +145,38 @@ function eg_pub_removable_cookie_plugins() {
 	) );
 }
 
-function eg_pub_plugins_remove_cookie_plugin( $dir, $apply ) {
-	$allowed = eg_pub_removable_cookie_plugins();
-	if ( ! isset( $allowed[ $dir ] ) ) {
-		return eg_pub_error( 'eg_plugin', 'Solo se quitan plugins de cookies conocidos: ' . implode( ', ', array_keys( $allowed ) ) . '.', 400 );
+/** Plugins de terceros cuyo trabajo ya hace EG Studio (o EG Cookies) y que se pueden quitar con remove. */
+function eg_pub_replaceable_plugins() {
+	return apply_filters( 'eg_pub_replaceable_plugins', array(
+		'google-site-kit' => 'Site Kit by Google',
+		'wp-consent-api'  => 'WP Consent API',
+	) );
+}
+
+/** Motivo por el que aún no se puede quitar un plugin sustituible ('' si se puede). */
+function eg_pub_replaceable_blocker( $dir ) {
+	require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	if ( 'google-site-kit' === $dir && ! (string) get_option( 'eg_pub_ga4_id', '' ) ) {
+		return 'Primero la etiqueta de GA4 en EG Studio (/seo-tech ga4), o la web se queda sin Analytics.';
 	}
-	if ( ! defined( 'EG_COOKIES_VERSION' ) || ! function_exists( 'eg_cookies_enabled' ) || ! eg_cookies_enabled() ) {
+	if ( 'wp-consent-api' === $dir && is_plugin_active( 'google-site-kit/google-site-kit.php' ) ) {
+		return 'Site Kit lo usa: quita antes Site Kit.';
+	}
+	return '';
+}
+
+function eg_pub_plugins_remove_cookie_plugin( $dir, $apply ) {
+	$allowed     = eg_pub_removable_cookie_plugins();
+	$replaceable = eg_pub_replaceable_plugins();
+	if ( isset( $replaceable[ $dir ] ) ) {
+		$block = eg_pub_replaceable_blocker( $dir );
+		if ( $block ) {
+			return eg_pub_error( 'eg_plugin', $block, 409 );
+		}
+		$allowed = $replaceable;
+	} elseif ( ! isset( $allowed[ $dir ] ) ) {
+		return eg_pub_error( 'eg_plugin', 'Solo se quitan plugins de cookies conocidos o sustituidos por EG Studio: ' . implode( ', ', array_merge( array_keys( $allowed ), array_keys( $replaceable ) ) ) . '.', 400 );
+	} elseif ( ! defined( 'EG_COOKIES_VERSION' ) || ! function_exists( 'eg_cookies_enabled' ) || ! eg_cookies_enabled() ) {
 		return eg_pub_error( 'eg_plugin', 'Primero EG Cookies activo y encendido: la web no puede quedarse sin aviso.', 409 );
 	}
 	if ( ! current_user_can( 'delete_plugins' ) || ! current_user_can( 'activate_plugins' ) ) {

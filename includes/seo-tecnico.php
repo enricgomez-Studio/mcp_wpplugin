@@ -27,6 +27,9 @@
  *             la portada. rankmath_get {"titles": ["local_address"]} (o "*") devuelve los valores actuales.
  *   ga4       "G-XXXXXXX": imprime en el <head> de toda la web la etiqueta de Google Analytics 4 (gtag.js) con esa ID
  *             de medición. "" o null la quita. El estado devuelve la ID guardada.
+ *   ga4_options {"purchase": true, "exclude_logged": true}: con la etiqueta de GA4, manda el evento purchase de
+ *             WooCommerce (una vez por pedido, en la página de pedido recibido, con importe, IVA y productos) y deja
+ *             fuera a los usuarios conectados (como hacía Site Kit). Claves que no se envían se quedan como estaban.
  *   hide_generator true/false: deja de publicar la versión de WordPress (meta generator, feeds y ?ver= de los
  *             scripts y estilos del núcleo) y la meta generator de WooCommerce.
  *   llms_static true/false: guarda el llms.txt de Rank Math como fichero llms.txt en la raíz de la web, para que el
@@ -45,6 +48,7 @@ const EG_PUB_OPTION_BUSINESS = 'eg_pub_schema_business';
 const EG_PUB_OPTION_ROBOTS   = 'eg_pub_robots_extra';
 const EG_PUB_OPTION_AI_CAT   = 'eg_pub_ai_catalog';
 const EG_PUB_OPTION_GA4      = 'eg_pub_ga4_id';
+const EG_PUB_OPTION_GA4_OPT  = 'eg_pub_ga4_options';
 const EG_PUB_OPTION_NO_GEN   = 'eg_pub_hide_generator';
 const EG_PUB_OPTION_LLMS     = 'eg_pub_llms_static';
 const EG_PUB_LLMS_HOOK       = 'eg_pub_llms_static_refresh';
@@ -258,13 +262,53 @@ add_action( 'wp_head', function () {
 // Google Analytics 4: etiqueta gtag.js en el <head> de toda la web, con la ID guardada por /seo-tech ga4.
 add_action( 'wp_head', function () {
 	$id = (string) get_option( EG_PUB_OPTION_GA4, '' );
-	if ( '' === $id || is_admin() ) {
+	if ( '' === $id || is_admin() || eg_pub_ga4_skip_user() ) {
 		return;
 	}
 	$id = esc_attr( $id );
 	echo '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $id . '"></script>' . "\n";
 	echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','" . $id . "');</script>\n";
 }, 1 );
+
+/** GA4 fuera para los usuarios conectados (ga4_options exclude_logged). */
+function eg_pub_ga4_skip_user() {
+	$o = (array) get_option( EG_PUB_OPTION_GA4_OPT, array() );
+	return ! empty( $o['exclude_logged'] ) && is_user_logged_in();
+}
+
+// Evento purchase de WooCommerce en la página de pedido recibido, una sola vez por pedido (ga4_options purchase).
+add_action( 'woocommerce_thankyou', function ( $order_id ) {
+	$o = (array) get_option( EG_PUB_OPTION_GA4_OPT, array() );
+	if ( empty( $o['purchase'] ) || ! (string) get_option( EG_PUB_OPTION_GA4, '' ) || eg_pub_ga4_skip_user() || ! function_exists( 'wc_get_order' ) ) {
+		return;
+	}
+	$order = wc_get_order( $order_id );
+	if ( ! $order || $order->has_status( array( 'failed', 'cancelled' ) ) || $order->get_meta( '_eg_ga4_purchase' ) ) {
+		return;
+	}
+	$items = array();
+	foreach ( $order->get_items() as $item ) {
+		$product = $item->get_product();
+		$qty     = max( 1, (int) $item->get_quantity() );
+		$items[] = array(
+			'item_id'   => $product && $product->get_sku() ? $product->get_sku() : (string) $item->get_product_id(),
+			'item_name' => $item->get_name(),
+			'price'     => round( (float) $order->get_item_total( $item, true ), 2 ),
+			'quantity'  => $qty,
+		);
+	}
+	$data = array(
+		'transaction_id' => (string) $order->get_order_number(),
+		'value'          => round( (float) $order->get_total(), 2 ),
+		'tax'            => round( (float) $order->get_total_tax(), 2 ),
+		'shipping'       => round( (float) $order->get_shipping_total(), 2 ),
+		'currency'       => $order->get_currency(),
+		'items'          => $items,
+	);
+	$order->update_meta_data( '_eg_ga4_purchase', gmdate( 'c' ) );
+	$order->save();
+	echo '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("event","purchase",' . wp_json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . ");</script>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+}, 20 );
 
 // Sin versión de WordPress a la vista (/seo-tech hide_generator).
 if ( get_option( EG_PUB_OPTION_NO_GEN ) ) {
@@ -540,6 +584,21 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 			}
 		}
 	}
+	if ( isset( $p['ga4_options'] ) && is_array( $p['ga4_options'] ) ) {
+		$before = (array) get_option( EG_PUB_OPTION_GA4_OPT, array() );
+		$after  = $before;
+		foreach ( array( 'purchase', 'exclude_logged' ) as $k ) {
+			if ( array_key_exists( $k, $p['ga4_options'] ) ) {
+				$after[ $k ] = rest_sanitize_boolean( $p['ga4_options'][ $k ] );
+			}
+		}
+		if ( $before !== $after ) {
+			$out['changes']['ga4_options'] = array( 'before' => $before, 'after' => $after );
+			if ( $apply ) {
+				update_option( EG_PUB_OPTION_GA4_OPT, $after, true );
+			}
+		}
+	}
 	if ( array_key_exists( 'hide_generator', $p ) ) {
 		$before = (bool) get_option( EG_PUB_OPTION_NO_GEN, false );
 		$after  = rest_sanitize_boolean( $p['hide_generator'] );
@@ -652,6 +711,7 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 		'ai_catalog_files' => array_map( 'basename', array_values( array_filter( eg_pub_ai_catalog_files(), 'file_exists' ) ) ),
 		'wpml_hreflang'   => eg_pub_seo_tech_wpml_hreflang(),
 		'ga4'             => (string) get_option( EG_PUB_OPTION_GA4, '' ),
+		'ga4_options'     => (array) get_option( EG_PUB_OPTION_GA4_OPT, array() ),
 		'hide_generator'  => (bool) get_option( EG_PUB_OPTION_NO_GEN, false ),
 		'llms_static'     => eg_pub_llms_static_state(),
 		'yoast'           => defined( 'WPSEO_VERSION' ) ? WPSEO_VERSION : null,

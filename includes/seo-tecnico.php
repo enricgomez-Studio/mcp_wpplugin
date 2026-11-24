@@ -14,7 +14,10 @@
  *   hreflang  true/false: activa o desactiva en WPML «mostrar idiomas alternativos en el HEAD».
  *   ai_catalog true, o {"description": "…", "queries": ["…", "…"]}: sirve /.well-known/ai-catalog.json (catálogo de
  *             Agentic Resource Discovery que revisa Lighthouse/PageSpeed) con la ficha de la web y su llms.txt si
- *             existe. false lo quita y la ruta vuelve a dar 404.
+ *             existe. false lo quita y la ruta vuelve a dar 404. Desde 2.131.0 el mismo catálogo se sirve también en
+ *             /.well-known/ard.json (nombre actual de la especificación, el primero que prueba Lighthouse) y se guarda
+ *             como ficheros estáticos en .well-known/ para que el servidor los sirva sin cargar WordPress (Lighthouse
+ *             solo espera 2 s). Volver a enviar ai_catalog con apply rehace los ficheros aunque no cambie nada.
  *   rankmath_modules {"redirections": "off", "404-monitor": "on"}: activa o desactiva módulos de Rank Math con su
  *             propia función (al activar, Rank Math crea las tablas que le falten al módulo). Sirve para reparar un
  *             módulo activo sin tablas en la base de datos, que llena el log de errores en cada visita. El estado
@@ -130,6 +133,51 @@ function eg_pub_llms_static_state() {
 		'bytes'   => file_exists( $file ) ? (int) filesize( $file ) : 0,
 		'next'    => wp_next_scheduled( EG_PUB_LLMS_HOOK ) ? gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( EG_PUB_LLMS_HOOK ) ) : null,
 	);
+}
+
+/** Rutas de los ficheros estáticos del catálogo de agentes (ARD y su nombre anterior). */
+function eg_pub_ai_catalog_files() {
+	return array( ABSPATH . '.well-known/ard.json', ABSPATH . '.well-known/ai-catalog.json' );
+}
+
+/**
+ * Escribe (o borra, con array vacío) los ficheros estáticos del catálogo. No pisa ni borra ficheros que no sean
+ * nuestros (md5 guardado). Devuelve array( 'written' => [...], 'error' => string ).
+ */
+function eg_pub_ai_catalog_static_write( $catalog ) {
+	$md5s = (array) get_option( EG_PUB_OPTION_AI_CAT . '_md5', array() );
+	$out  = array( 'written' => array(), 'error' => '' );
+	if ( ! $catalog ) {
+		foreach ( eg_pub_ai_catalog_files() as $file ) {
+			if ( isset( $md5s[ $file ] ) && file_exists( $file ) && md5_file( $file ) === $md5s[ $file ] ) {
+				@unlink( $file ); // phpcs:ignore
+			}
+		}
+		delete_option( EG_PUB_OPTION_AI_CAT . '_md5' );
+		return $out;
+	}
+	$json = wp_json_encode( $catalog, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
+	$dir  = ABSPATH . '.well-known';
+	if ( ! is_dir( $dir ) && ! wp_mkdir_p( $dir ) ) {
+		$out['error'] = 'no se puede crear ' . $dir;
+		return $out;
+	}
+	foreach ( eg_pub_ai_catalog_files() as $file ) {
+		if ( file_exists( $file ) && ( ! isset( $md5s[ $file ] ) || md5_file( $file ) !== $md5s[ $file ] ) ) {
+			$out['error'] = trim( $out['error'] . ' ya hay un ' . basename( $file ) . ' que no es nuestro.' );
+			continue;
+		}
+		$tmp = $file . '.eg-tmp';
+		if ( false === file_put_contents( $tmp, $json ) || ! rename( $tmp, $file ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions
+			@unlink( $tmp ); // phpcs:ignore
+			$out['error'] = trim( $out['error'] . ' no se puede escribir ' . $file . '.' );
+			continue;
+		}
+		$md5s[ $file ]    = md5( $json );
+		$out['written'][] = basename( $file );
+	}
+	update_option( EG_PUB_OPTION_AI_CAT . '_md5', $md5s, false );
+	return $out;
 }
 
 /** Limpia en profundidad los datos del negocio: textos sin HTML y URLs válidas. */
@@ -261,7 +309,8 @@ function eg_pub_seo_tech_ai_catalog_build( $cfg ) {
 
 add_action( 'init', function () {
 	$path = (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '', PHP_URL_PATH );
-	if ( untrailingslashit( (string) wp_parse_url( home_url(), PHP_URL_PATH ) ) . '/.well-known/ai-catalog.json' !== $path ) {
+	$base = untrailingslashit( (string) wp_parse_url( home_url(), PHP_URL_PATH ) );
+	if ( $base . '/.well-known/ai-catalog.json' !== $path && $base . '/.well-known/ard.json' !== $path ) {
 		return;
 	}
 	$catalog = get_option( EG_PUB_OPTION_AI_CAT, array() );
@@ -449,13 +498,14 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 		$after  = ( false === $p['ai_catalog'] || null === $p['ai_catalog'] || 'false' === $p['ai_catalog'] ) ? array() : eg_pub_seo_tech_ai_catalog_build( $p['ai_catalog'] );
 		if ( $before !== $after ) {
 			$out['changes']['ai_catalog'] = array( 'before' => $before, 'after' => $after );
-			if ( $apply ) {
-				if ( $after ) {
-					update_option( EG_PUB_OPTION_AI_CAT, $after, false );
-				} else {
-					delete_option( EG_PUB_OPTION_AI_CAT );
-				}
+		}
+		if ( $apply ) {
+			if ( $after ) {
+				update_option( EG_PUB_OPTION_AI_CAT, $after, false );
+			} else {
+				delete_option( EG_PUB_OPTION_AI_CAT );
 			}
+			$out['ai_catalog_static'] = eg_pub_ai_catalog_static_write( $after );
 		}
 	}
 	if ( array_key_exists( 'ga4', $p ) ) {
@@ -583,7 +633,8 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 		'business'        => get_option( EG_PUB_OPTION_BUSINESS, array() ),
 		'robots'          => (string) get_option( EG_PUB_OPTION_ROBOTS, '' ),
 		'robots_physical' => file_exists( ABSPATH . 'robots.txt' ),
-		'ai_catalog'      => get_option( EG_PUB_OPTION_AI_CAT, array() ) ? home_url( '/.well-known/ai-catalog.json' ) : null,
+		'ai_catalog'      => get_option( EG_PUB_OPTION_AI_CAT, array() ) ? home_url( '/.well-known/ard.json' ) : null,
+		'ai_catalog_files' => array_map( 'basename', array_values( array_filter( eg_pub_ai_catalog_files(), 'file_exists' ) ) ),
 		'wpml_hreflang'   => eg_pub_seo_tech_wpml_hreflang(),
 		'ga4'             => (string) get_option( EG_PUB_OPTION_GA4, '' ),
 		'hide_generator'  => (bool) get_option( EG_PUB_OPTION_NO_GEN, false ),

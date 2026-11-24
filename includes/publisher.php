@@ -655,3 +655,21 @@ add_action( 'eg_pub_notify_published', function ( $post_id ) {
 		update_post_meta( $post_id, '_eg_notified', current_time( 'mysql' ) );
 	}
 } );
+
+/**
+ * Al vaciar el CSS de Elementor (nuestro o desde su panel), rehacer al momento los ficheros de puntos de
+ * corte personalizados (custom-frontend.min.css, custom-apple-webkit.min.css...). clear_cache los borra pero
+ * deja su marca de tiempo guardada, así que Elementor sigue enlazándolos con el ?ver= antiguo y dan 404: la web
+ * se ve sin maquetar (clubdelviatger.cat, 24/11/2026).
+ */
+add_action( 'elementor/core/files/clear_cache', 'eg_pub_elementor_breakpoint_files', 99 );
+function eg_pub_elementor_breakpoint_files() {
+	delete_option( 'elementor-custom-breakpoints-files' );
+	if ( class_exists( '\Elementor\Core\Breakpoints\Manager' ) && method_exists( '\Elementor\Core\Breakpoints\Manager', 'compile_stylesheet_templates' ) ) {
+		try {
+			\Elementor\Core\Breakpoints\Manager::compile_stylesheet_templates();
+		} catch ( \Throwable $e ) {
+			// Si falla, Elementor los rehace solo en la siguiente visita sin caché (ya no hay marca de tiempo).
+		}
+	}
+}

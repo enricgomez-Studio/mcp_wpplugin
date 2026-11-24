@@ -13,7 +13,8 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 ## 2.134.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo `/users` (módulo `usuarios`, tipología Gestión de la web): `list: true` lista usuarios y roles; `create: {login, email, first_name, last_name, role, notify}` con `apply: true` crea un usuario con contraseña aleatoria y, por defecto, le envía el correo estándar de WordPress para elegir contraseña. No crea administradores (rechaza roles con `manage_options`). Requiere que el autor configurado pueda `create_users`.
-- Webs: clubdelviatger.cat (usuario para el alumno de prácticas de marketing).
+- Al vaciar el CSS de Elementor (`elementor/core/files/clear_cache`) se borra la marca de tiempo de los ficheros de puntos de corte personalizados y se rehacen al momento (`compile_stylesheet_templates`). Antes `custom-frontend.min.css` y `custom-apple-webkit.min.css` quedaban borrados pero enlazados con el `?ver=` antiguo: 404 y web sin maquetar para visitantes (clubdelviatger.cat, 24/11).
+- Webs: clubdelviatger.cat (usuario para el alumno de prácticas de marketing; web sin maquetar).
 
 ## 2.133.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 

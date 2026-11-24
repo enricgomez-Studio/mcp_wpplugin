@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.135.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/scripts elementor: true` lista los códigos de Custom Code de Elementor Pro (id, título, estado, posición, inicio del código); `elementor_status: {"<id>": "draft"|"publish"}` con `apply: true` los apaga o enciende y vacía WP Rocket. Sirve para pasar un píxel puesto en Elementor a `/scripts` detrás del aviso de cookies (`type="text/plain" data-eg-category="marketing"`).
+- Gestión de la web (`scripts`). Webs: clubdelviatger.cat (píxel de Meta que cargaba sin consentimiento).
+
 ## 2.134.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - Nuevo `/users` (módulo `usuarios`, tipología Gestión de la web): `list: true` lista usuarios y roles; `create: {login, email, first_name, last_name, role, notify}` con `apply: true` crea un usuario con contraseña aleatoria y, por defecto, le envía el correo estándar de WordPress para elegir contraseña. No crea administradores (rechaza roles con `manage_options`). Requiere que el autor configurado pueda `create_users`.

@@ -1,89 +1,21 @@
 <?php
 /**
- * Plugin Name:       EG Studio
- * Description:       Gestión, mantenimiento, optimización y contenidos de las webs de enricgomez Studio. Por bloques: Blog, Elementor, WooCommerce, Gestión de la web y Servicios para el cliente (Asistente IA para gestionar el blog y los productos desde Claude o ChatGPT). Endpoints /wp-json/eg/v1/ para los escenarios de Make, con la clave de Ajustes → EG Studio. Se actualiza solo desde GitHub.
- * Version:           2.138.0
- * Requires at least: 5.8
- * Requires PHP:      7.4
+ * Plugin Name:       EG Studio (cargador antiguo)
+ * Description:       Paso automático de la carpeta eg-publicacion/ a eg-studio/. Se borra solo en cuanto el plugin se pasa a su carpeta nueva.
+ * Version:           2.139.0
  * Author:            enricgomez Studio
- * Author URI:        https://www.enricgomez.com
  * Update URI:        https://github.com/enricgomez-Studio/mcp_wpplugin
- * Text Domain:       eg-publicacion
  * License:           GPL-3.0-or-later
- * License URI:       https://www.gnu.org/licenses/gpl-3.0.html
  *
- * Copyright (C) 2026 EG Creative Studio, S.L. (enricgomez Studio)
+ * Hasta la v2.138.0 el plugin vivía en eg-publicacion/ con este archivo como principal. Solo va en eg-publicacion.zip
+ * (el que descargan las versiones antiguas): las webs que aún lo tienen activo así cargan EG Studio desde aquí y, al
+ * final de la siguiente petición, se pasan solas a eg-studio/eg-studio.php y lo borran (ver includes/migracion.php).
+ * Lleva cabecera para que WordPress pueda reactivarlo tras actualizar desde el escritorio.
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-const EG_PUB_VERSION = '2.138.0';
-const EG_PUB_REPO    = 'enricgomez-Studio/mcp_wpplugin';
-define( 'EG_PUB_BASENAME', plugin_basename( __FILE__ ) );
-
-// Otra copia ya cargada: la versión antigua como mu-plugin o este plugin instalado dos veces.
-if ( function_exists( 'eg_pub_get_key' ) ) {
-	$eg_pub_other = ( new ReflectionFunction( 'eg_pub_get_key' ) )->getFileName();
-	$eg_pub_other = str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( (string) $eg_pub_other ) );
-	add_action( 'admin_notices', function () use ( $eg_pub_other ) {
-		$is_mu = false !== strpos( $eg_pub_other, 'mu-plugins/' );
-		echo '<div class="notice notice-error"><p><strong>EG Studio:</strong> ya hay otra copia cargada en <code>' . esc_html( $eg_pub_other ) . '</code>. '
-			. ( $is_mu
-				? 'Es la versión antigua: bórrala para que funcione este plugin (la clave y los ajustes se conservan).'
-				: 'El plugin está instalado dos veces: desactiva y borra una de las dos copias en Plugins (la clave y los ajustes se conservan).' )
-			. '</p></div>';
-	} );
-	return;
+if ( ! defined( 'EG_PUB_LEGACY_LOADER' ) ) {
+	define( 'EG_PUB_LEGACY_LOADER', __FILE__ );
 }
-
-require_once __DIR__ . '/includes/publisher.php';
-require_once __DIR__ . '/includes/aviso-cliente.php';
-require_once __DIR__ . '/includes/post-media.php';
-require_once __DIR__ . '/includes/faq.php';
-require_once __DIR__ . '/includes/indexnow.php';
-require_once __DIR__ . '/includes/modulos.php';
-require_once __DIR__ . '/includes/seo.php';
-require_once __DIR__ . '/includes/seo-tecnico.php';
-require_once __DIR__ . '/includes/limpieza.php';
-require_once __DIR__ . '/includes/medios-externos.php';
-require_once __DIR__ . '/includes/terminos.php';
-require_once __DIR__ . '/includes/usuarios.php';
-require_once __DIR__ . '/includes/comentarios.php';
-require_once __DIR__ . '/includes/rendimiento.php';
-require_once __DIR__ . '/includes/perfil.php';
-require_once __DIR__ . '/includes/perfil-ajustes.php';
-require_once __DIR__ . '/includes/landings.php';
-require_once __DIR__ . '/includes/textos.php';
-require_once __DIR__ . '/includes/plantillas.php';
-require_once __DIR__ . '/includes/kit.php';
-require_once __DIR__ . '/includes/contenido.php';
-require_once __DIR__ . '/includes/formularios.php';
-require_once __DIR__ . '/includes/fichas.php';
-require_once __DIR__ . '/includes/tema.php';
-require_once __DIR__ . '/includes/jetengine.php';
-require_once __DIR__ . '/includes/importar.php';
-require_once __DIR__ . '/includes/enlaces.php';
-require_once __DIR__ . '/includes/woocommerce.php';
-require_once __DIR__ . '/includes/pedidos.php';
-require_once __DIR__ . '/includes/campanas.php';
-require_once __DIR__ . '/includes/wcpa.php';
-require_once __DIR__ . '/includes/wc-emails.php';
-require_once __DIR__ . '/includes/hpos.php';
-require_once __DIR__ . '/includes/webapp.php';
-require_once __DIR__ . '/includes/css.php';
-require_once __DIR__ . '/includes/scripts.php';
-require_once __DIR__ . '/includes/slugs-idiomas.php';
-require_once __DIR__ . '/includes/bd-limpieza.php';
-require_once __DIR__ . '/includes/revision-idiomas.php';
-require_once __DIR__ . '/includes/wpml-widgets.php';
-require_once __DIR__ . '/includes/ficha-pdf.php';
-require_once __DIR__ . '/includes/asistente.php';
-require_once __DIR__ . '/includes/asistente-herramientas.php';
-require_once __DIR__ . '/includes/asistente-oauth.php';
-require_once __DIR__ . '/includes/updater.php';
-require_once __DIR__ . '/includes/actualizar.php';
-require_once __DIR__ . '/includes/plugins-propios.php';
-require_once __DIR__ . '/includes/copias.php';
-require_once __DIR__ . '/includes/abilities.php';
+require_once __DIR__ . '/eg-studio.php';

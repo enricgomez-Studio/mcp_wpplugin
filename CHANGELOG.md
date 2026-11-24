@@ -10,6 +10,14 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.139.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- El plugin pasa a la carpeta y el archivo **`eg-studio/eg-studio.php`** (antes `eg-publicacion/eg-publicacion.php`). Cada web se pasa sola tras actualizar (nuevo `includes/migracion.php`): al final de la primera petición con la versión nueva renombra la carpeta, cambia el plugin activo (también en multisitio y en la lista de actualizaciones automáticas) y borra el cargador antiguo. Si ya existe una `eg-studio/` subida a mano, se queda con la versión más nueva y borra la otra. Si falla (permisos), sigue funcionando desde la carpeta antigua, avisa en el escritorio y lo reintenta cada hora. `EG_PUB_NO_MIGRATE` lo impide.
+- La release lleva dos zips: `eg-studio.zip` (el que usan las webs desde ahora) y `eg-publicacion.zip` (el que buscan las versiones anteriores), con el cargador `eg-publicacion.php` que carga el plugin desde la carpeta antigua hasta el paso.
+- Ajustes en `?page=eg-studio`; el enlace antiguo `?page=eg-publicacion` redirige.
+- Sin cambios: rutas `/wp-json/eg/v1/`, cabecera `X-EG-Key`, clave, ajustes (`eg_pub_…`) y nombres de las abilities. No hay que tocar Make.
+- Webs: todas.
+
 ## 2.138.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - El plugin pasa a llamarse **EG Studio** (antes EG Publicación) y su descripción explica lo que hace hoy: gestión, mantenimiento, optimización y contenidos de las webs del estudio, por bloques. Solo cambia el nombre visible (Plugins, Ajustes, menú, avisos y emails). La carpeta, el archivo, el zip, las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key` y los ajustes siguen igual, así que no hay que tocar nada en Make ni en las webs.

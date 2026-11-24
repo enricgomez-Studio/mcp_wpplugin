@@ -4,7 +4,9 @@
  *   POST /wp-json/eg/v1/rocket
  * Sin parámetros devuelve los ajustes que gestiona este endpoint y si la licencia parece oficial.
  *   add / remove   {"exclude_lazyload": ["montaje-cookies"], "cache_reject_uri": ["/resumen-de-compra/(.*)"]}
- *                  añade o quita valores de las listas (sin duplicar ni tocar el resto de la lista)
+ *                  añade o quita valores de las listas (sin duplicar ni tocar el resto de la lista).
+ *                  cdn_reject_files: ficheros que no pasan por el CDN de WP Rocket (p. ej. "/wp-content/(.*).css":
+ *                  el CSS que bloquea el renderizado sale del propio dominio, sin abrir otra conexión).
  *   set            {"async_css": 0, "lazyload_iframes": 1}  interruptores (0/1)
  *   elementor      {"css_print_method": "internal", "font_icon_svg": "active"}  ajustes de rendimiento de Elementor
  *                  (ver EG_PUB_ELEMENTOR_PERF); al guardar se rehace el CSS de Elementor
@@ -23,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_ROCKET_LISTS    = array( 'exclude_lazyload', 'cache_reject_uri', 'cache_reject_cookies', 'exclude_css', 'exclude_js', 'exclude_defer_js', 'delay_js_exclusions' );
+const EG_PUB_ROCKET_LISTS    = array( 'exclude_lazyload', 'cache_reject_uri', 'cache_reject_cookies', 'exclude_css', 'exclude_js', 'exclude_defer_js', 'delay_js_exclusions', 'cdn_reject_files' );
 const EG_PUB_ROCKET_SWITCHES = array( 'lazyload', 'lazyload_iframes', 'lazyload_css_bg_img', 'remove_unused_css', 'async_css', 'delay_js', 'defer_all_js', 'minify_css', 'minify_js', 'image_dimensions', 'cache_mobile', 'do_caching_mobile_files', 'manual_preload' );
 
 // Ajustes de rendimiento de Elementor: clave de /rocket => array( opción de WordPress, valores admitidos ).

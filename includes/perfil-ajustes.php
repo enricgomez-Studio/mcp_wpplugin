@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_PERF_FIXES = array( 'jet_validator', 'cdn_fonts', 'img_sizes', 'thumbs_webp', 'listing_bg' );
+const EG_PUB_PERF_FIXES = array( 'jet_validator', 'cdn_fonts', 'img_sizes', 'thumbs_webp', 'listing_bg', 'hero_preload' );
 
 final class EG_Pub_Jet_Validator_Cache {
 	private static $controls = array();
@@ -138,6 +138,7 @@ function eg_pub_perf_fixes_state() {
 	$state['img_sizes']['sizes']      = is_array( $fixes['img_sizes'] ?? null ) ? $fixes['img_sizes'] : array();
 	$state['listing_bg']['size']      = eg_pub_listing_bg_size( $fixes['listing_bg'] ?? '' );
 	$state['listing_bg']['listings']  = is_array( $fixes['listing_bg'] ?? null ) ? (array) ( $fixes['listing_bg']['listings'] ?? array() ) : array();
+	$state['hero_preload']['types']   = is_array( $fixes['hero_preload'] ?? null ) ? $fixes['hero_preload'] : array();
 	$state['thumbs_webp']['next_run'] = wp_next_scheduled( 'eg_pub_thumbs_webp' ) ? gmdate( 'Y-m-d H:i', wp_next_scheduled( 'eg_pub_thumbs_webp' ) ) : null;
 	if ( defined( 'JET_ELEMENTS_VERSION' ) ) {
 		$state['jet_validator']['jet_elements'] = JET_ELEMENTS_VERSION;
@@ -457,5 +458,40 @@ add_action( 'wp_loaded', function () {
 	$fixes = eg_pub_perf_fixes();
 	if ( ! empty( $fixes['jet_validator'] ) ) {
 		EG_Pub_Jet_Validator_Cache::swap();
+	}
+}, 1 );
+
+
+/**
+ * hero_preload: {"<post_type>": "featured" | "<URL de imagen>"}. En las fichas de ese tipo precarga con prioridad
+ * alta la foto de cabecera que Elementor pinta como fondo (el navegador no la descubre hasta tener el CSS, y es el
+ * LCP). "featured" = la imagen destacada a tamaño completo (la misma URL que pone Elementor en el fondo dinámico).
+ * No cambia la imagen ni su tamaño: solo la pide antes.
+ */
+function eg_pub_hero_preload_clean( $value ) {
+	$out = array();
+	foreach ( (array) $value as $type => $src ) {
+		$type = sanitize_key( (string) $type );
+		$src  = trim( (string) $src );
+		if ( '' === $type || ! post_type_exists( $type ) ) {
+			continue;
+		}
+		$out[ $type ] = 'featured' === $src ? 'featured' : esc_url_raw( $src );
+	}
+	return array_filter( $out );
+}
+
+add_action( 'wp_head', function () {
+	$cfg = eg_pub_perf_fixes()['hero_preload'] ?? null;
+	if ( ! is_array( $cfg ) || ! is_singular() ) {
+		return;
+	}
+	$type = get_post_type();
+	if ( empty( $cfg[ $type ] ) ) {
+		return;
+	}
+	$src = 'featured' === $cfg[ $type ] ? (string) get_the_post_thumbnail_url( get_queried_object_id(), 'full' ) : $cfg[ $type ];
+	if ( '' !== $src ) {
+		echo '<link rel="preload" as="image" href="' . esc_url( $src ) . '" fetchpriority="high" data-eg-hero>' . "\n";
 	}
 }, 1 );

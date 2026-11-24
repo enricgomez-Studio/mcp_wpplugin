@@ -8,6 +8,8 @@ Plugin de WordPress de enricgomez Studio para la gestión, el mantenimiento, la 
 
 **Nombre e identificadores (desde la v2.138.0).** Se llamaba «EG Publicación». Solo cambia el nombre visible. La carpeta y el archivo (`eg-publicacion/eg-publicacion.php`), el zip de las releases (`eg-publicacion.zip`), la página de ajustes (`?page=eg-publicacion`), las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key` y los ajustes y funciones `eg_pub_…` siguen igual a propósito: WordPress identifica el plugin activo por su carpeta y su archivo, y renombrarlos lo desactivaría en todas las webs al actualizar. No los cambies.
 
+**Instalar a mano encima (desde la v2.138.0).** Si se sube el zip del plugin a una web que ya lo tiene (desde wp-admin, ManageWP u otro gestor), se reinstala sobre la copia existente, en su misma carpeta, sin dejar dos copias.
+
 ### Cómo trabajamos en este repositorio
 
 Varias sesiones de Claude pueden modificar este plugin en paralelo. Para no pisarse ni decidir sobre una versión que ya no es la actual:

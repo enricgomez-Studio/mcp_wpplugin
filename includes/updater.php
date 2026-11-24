@@ -151,6 +151,58 @@ add_filter( 'upgrader_source_selection', function ( $source, $remote_source, $up
 	return $wp_filesystem->move( $source, $wanted, true ) ? $wanted : $source;
 }, 10, 4 );
 
+// Subir el zip a mano (Plugins → Añadir nuevo → Subir, ManageWP u otro gestor) en una web que ya tiene el plugin:
+// WordPress lo trata como una instalación nueva y, si la carpeta del zip no coincide con la instalada, deja dos copias
+// que chocan (o se para con «la carpeta ya existe»). Si el paquete es este plugin, se instala encima de la copia que
+// está funcionando, en su misma carpeta, como una reinstalación: la carpeta antigua se aparta y se borra al terminar
+// (o se recupera si la instalación falla). Los ajustes y la clave están en la base de datos y no se tocan.
+add_filter( 'upgrader_source_selection', function ( $source, $remote_source, $upgrader, $hook_extra = array() ) {
+	global $wp_filesystem, $eg_pub_reinstall_backup;
+	if ( ! empty( $hook_extra['plugin'] ) || ( $hook_extra['type'] ?? '' ) !== 'plugin' || ! $wp_filesystem ) {
+		return $source; // Las actualizaciones normales ya las lleva el filtro anterior.
+	}
+	if ( ! $wp_filesystem->exists( trailingslashit( $source ) . 'eg-publicacion.php' ) ) {
+		return $source;
+	}
+	$folder = dirname( EG_PUB_BASENAME );
+	if ( '.' === $folder || '' === $folder ) {
+		return $source;
+	}
+	$current = trailingslashit( WP_PLUGIN_DIR ) . $folder;
+	if ( ! $wp_filesystem->is_dir( $current ) ) {
+		return $source;
+	}
+	// El paquete, con el nombre de la carpeta instalada.
+	$wanted = trailingslashit( $remote_source ) . $folder;
+	if ( untrailingslashit( $source ) !== $wanted && ! $wp_filesystem->move( $source, $wanted, true ) ) {
+		return $source;
+	}
+	// Apartar la copia actual para que la instalación no se pare ni deje dos.
+	$backup = trailingslashit( WP_CONTENT_DIR ) . 'upgrade/eg-pub-anterior-' . time();
+	if ( ! $wp_filesystem->move( $current, $backup, true ) ) {
+		return new WP_Error( 'eg_pub_reinstall', 'EG Studio: no se ha podido apartar la versión instalada para reinstalar el plugin. Prueba con «Reemplazar» o actualiza desde Plugins.' );
+	}
+	$eg_pub_reinstall_backup = array( 'backup' => $backup, 'current' => $current );
+	return trailingslashit( $wanted );
+}, 11, 4 );
+
+add_filter( 'upgrader_install_package_result', function ( $result ) {
+	global $wp_filesystem, $eg_pub_reinstall_backup;
+	if ( empty( $eg_pub_reinstall_backup ) || ! $wp_filesystem ) {
+		return $result;
+	}
+	$b = $eg_pub_reinstall_backup;
+	$eg_pub_reinstall_backup = null;
+	if ( is_wp_error( $result ) || ! $wp_filesystem->exists( trailingslashit( $b['current'] ) . 'eg-publicacion.php' ) ) {
+		$wp_filesystem->delete( $b['current'], true );
+		$wp_filesystem->move( $b['backup'], $b['current'], true ); // Falló: se recupera la versión anterior.
+	} else {
+		$wp_filesystem->delete( $b['backup'], true );
+		delete_site_transient( EG_PUB_RELEASE_CACHE );
+	}
+	return $result;
+} );
+
 // Actualizar solo, sin tener que pulsar el botón en cada web.
 add_filter( 'auto_update_plugin', function ( $update, $item ) {
 	return ( isset( $item->plugin ) && EG_PUB_BASENAME === $item->plugin ) ? ! eg_pub_update_held() : $update;

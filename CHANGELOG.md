@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.134.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- Nuevo `/users` (módulo `usuarios`, tipología Gestión de la web): `list: true` lista usuarios y roles; `create: {login, email, first_name, last_name, role, notify}` con `apply: true` crea un usuario con contraseña aleatoria y, por defecto, le envía el correo estándar de WordPress para elegir contraseña. No crea administradores (rechaza roles con `manage_options`). Requiere que el autor configurado pueda `create_users`.
+- Al vaciar el CSS de Elementor (`elementor/core/files/clear_cache`) se borra la marca de tiempo de los ficheros de puntos de corte personalizados y se rehacen al momento (`compile_stylesheet_templates`). Antes `custom-frontend.min.css` y `custom-apple-webkit.min.css` quedaban borrados pero enlazados con el `?ver=` antiguo: 404 y web sin maquetar para visitantes (clubdelviatger.cat, 24/11).
+- Webs: clubdelviatger.cat (usuario para el alumno de prácticas de marketing; web sin maquetar).
+
 ## 2.133.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/perf fixes listing_bg` pasa a `{"size": "large", "listings": [IDs de plantillas de listado]}` y solo actúa en esos listados. Con `true` actuaba en todos, también en un listado usado como slider a pantalla completa (portada de clubdelviatger.cat), donde la foto de 1024 px se veía borrosa. El formato anterior (`true` o un tamaño) ya no activa nada. El estado devuelve `listing_bg.listings`.

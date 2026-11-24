@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       EG Studio (cargador antiguo)
- * Description:       Paso automático de la carpeta eg-publicacion/ a eg-studio/. Se borra solo en cuanto el plugin se pasa a su carpeta nueva.
- * Version:           2.142.0
+ * Description:       Archivo de compatibilidad de EG Studio. No lo desactives.
+ * Version:           2.143.0
  * Author:            enricgomez Studio
  * Update URI:        https://github.com/enricgomez-Studio/mcp_wpplugin
  * License:           GPL-3.0-or-later

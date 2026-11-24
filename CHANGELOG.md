@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.130.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/rocket add|remove` admite la lista `cdn_reject_files` («Excluir ficheros del CDN» de WP Rocket), p. ej. `["/wp-content/(.*).css"]`: el CSS que bloquea el renderizado se sirve desde el propio dominio, por la misma conexión que el HTML, en vez de abrir otra con el CDN antes de pintar.
+- Gestión de la web (módulo `rendimiento`). Webs: hotelmiamicalella.com (Bunny CDN, 38 hojas de estilo). Sirve en cualquier web con CDN en WP Rocket.
+
 ## 2.129.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/scripts` admite `position: "head_top"`: el código se imprime al principio del `<head>` (prioridad 1 de `wp_head`), antes de las hojas de estilo y del CSS en línea de Elementor. Sirve para precargar la imagen principal: con `head` salía al final de un `<head>` de 275 KB y el navegador la descubría tarde.

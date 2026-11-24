@@ -19,8 +19,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const EG_PUB_MIGRATE_LOG = 'eg_pub_folder_migration';
 
+/**
+ * Desde la v2.141.0 el paso está EN PAUSA por defecto (en clubdelviatger.cat el plugin desapareció tras el paso y aún no
+ * se sabe por qué). Se activa por web con la opción eg_pub_migrate_enabled (POST /update {"migrate":true}) o con
+ * define( 'EG_PUB_MIGRATE', true ). Mientras tanto la web sigue funcionando desde su carpeta antigua con el cargador.
+ */
+function eg_pub_migration_enabled() {
+	if ( defined( 'EG_PUB_NO_MIGRATE' ) && EG_PUB_NO_MIGRATE ) {
+		return false;
+	}
+	return ( defined( 'EG_PUB_MIGRATE' ) && EG_PUB_MIGRATE ) || get_option( 'eg_pub_migrate_enabled' );
+}
+
 function eg_pub_needs_migration() {
-	return EG_PUB_MAIN !== EG_PUB_BASENAME && ! ( defined( 'EG_PUB_NO_MIGRATE' ) && EG_PUB_NO_MIGRATE );
+	return EG_PUB_MAIN !== EG_PUB_BASENAME && eg_pub_migration_enabled();
+}
+
+/** Bloqueo atómico (add_option no lo es: con dos peticiones a la vez las dos pueden «crearlo»). */
+function eg_pub_migrate_lock() {
+	global $wpdb;
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = 'eg_pub_migrate_lock' AND option_value < %d", time() - 300 ) );
+	$ok = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES ('eg_pub_migrate_lock', %s, 'off')", (string) time() ) );
+	return 1 === (int) $ok;
 }
 
 add_action( 'shutdown', function () {
@@ -32,14 +52,12 @@ add_action( 'shutdown', function () {
 		return;
 	}
 	// Una sola petición a la vez: add_option falla si otra ya la ha creado.
-	if ( ! add_option( 'eg_pub_migrate_lock', time(), '', 'no' ) ) {
-		if ( (int) get_option( 'eg_pub_migrate_lock' ) < time() - 300 ) {
-			delete_option( 'eg_pub_migrate_lock' ); // Bloqueo huérfano.
-		}
+	if ( ! eg_pub_migrate_lock() ) {
 		return;
 	}
 	$result = eg_pub_migrate_folder();
-	delete_option( 'eg_pub_migrate_lock' );
+	$GLOBALS['wpdb']->delete( $GLOBALS['wpdb']->options, array( 'option_name' => 'eg_pub_migrate_lock' ) );
+	wp_cache_delete( 'eg_pub_migrate_lock', 'options' );
 	if ( is_wp_error( $result ) ) {
 		set_transient( 'eg_pub_migrate_wait', 1, HOUR_IN_SECONDS );
 	}

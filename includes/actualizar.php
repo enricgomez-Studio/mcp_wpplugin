@@ -5,7 +5,8 @@
  *   POST /wp-json/eg/v1/update
  * Está siempre activo, sea cual sea la tipología de la web. Lee la última release de GitHub sin caché y, si es
  * más nueva que la instalada, la instala con el actualizador de WordPress y deja el plugin activo.
- * dry_run: true solo dice la versión instalada y la última, sin instalar nada. Respeta «Mantener esta web en la versión».
+ * dry_run: true solo dice la versión instalada y la última, sin instalar nada. La respuesta incluye «folder» (carpeta activa, copias
+ * del plugin en wp-content/plugins y estado del paso a eg-studio/); migrate: true/false activa o pausa ese paso en esta web. Respeta «Mantener esta web en la versión».
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -32,6 +33,19 @@ function eg_pub_update_handle( WP_REST_Request $r ) {
 		'latest'    => $release['version'],
 		'held'      => eg_pub_update_held(),
 		'updated'   => false,
+	);
+	// Carpeta del plugin (paso a eg-studio/, includes/migracion.php): estado y, con migrate true/false, activarlo en esta web.
+	if ( null !== $r['migrate'] && function_exists( 'eg_pub_migration_enabled' ) ) {
+		update_option( 'eg_pub_migrate_enabled', rest_sanitize_boolean( $r['migrate'] ) ? 1 : 0, false );
+		delete_transient( 'eg_pub_migrate_wait' );
+	}
+	$out['folder'] = array(
+		'active'    => EG_PUB_BASENAME,
+		'copies'    => array_values( array_map( 'basename', array_filter( (array) glob( WP_PLUGIN_DIR . '/*', GLOB_ONLYDIR ), function ( $d ) {
+			return is_file( $d . '/eg-studio.php' ) || is_file( $d . '/eg-publicacion.php' );
+		} ) ) ),
+		'migrate'   => function_exists( 'eg_pub_migration_enabled' ) ? (bool) eg_pub_migration_enabled() : false,
+		'last_move' => get_option( 'eg_pub_folder_migration' ) ? get_option( 'eg_pub_folder_migration' ) : null,
 	);
 	if ( ! version_compare( $release['version'], EG_PUB_VERSION, '>' ) ) {
 		$out['message'] = 'Ya está en la última versión.';

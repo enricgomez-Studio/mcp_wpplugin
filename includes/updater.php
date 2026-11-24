@@ -13,6 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const EG_PUB_SLUG          = 'eg-studio';
+
+/**
+ * Zip de la release que toca a esta web. Si funciona con el cargador antiguo (…/eg-publicacion.php), necesita
+ * eg-publicacion.zip, que lo trae; con eg-studio.zip la actualización borraría el archivo activo y el plugin se desactivaría.
+ */
+function eg_pub_release_asset() {
+	return 'eg-publicacion.php' === basename( EG_PUB_BASENAME ) ? 'eg-publicacion.zip' : EG_PUB_SLUG . '.zip';
+}
 const EG_PUB_RELEASE_CACHE = 'eg_pub_gh_release';
 const EG_PUB_OPTION_HOLD   = 'eg_pub_hold_version';
 
@@ -52,7 +60,7 @@ function eg_pub_gh_release( $force = false ) {
 	if ( is_array( $data ) && ! empty( $data['tag_name'] ) ) {
 		$package = '';
 		foreach ( (array) ( $data['assets'] ?? array() ) as $asset ) {
-			if ( EG_PUB_SLUG . '.zip' === ( $asset['name'] ?? '' ) ) {
+			if ( eg_pub_release_asset() === ( $asset['name'] ?? '' ) ) {
 				// Con token (repo privado) hay que descargar por la API.
 				$package = eg_pub_gh_token() ? $asset['url'] : $asset['browser_download_url'];
 				break;

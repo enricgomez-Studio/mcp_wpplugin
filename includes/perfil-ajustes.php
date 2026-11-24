@@ -495,3 +495,95 @@ add_action( 'wp_head', function () {
 		echo '<link rel="preload" as="image" href="' . esc_url( $src ) . '" fetchpriority="high" data-eg-hero>' . "\n";
 	}
 }, 1 );
+
+
+/**
+ * Recompresión del .webp de tamaño completo de Imagify (foto.ext.webp) a la misma resolución. Para fotos de cabecera
+ * de 1920 px que Imagify dejó pesadas (p. ej. PNG con paleta, donde el tramado infla el WebP): q80 desde la imagen
+ * de la mediateca da igual o mejor SSIM y un 30-35 % menos de peso (clubdelviatger.cat, 24/11/2026).
+ */
+function eg_pub_webp_recompress( $o ) {
+	$quality = max( 60, min( 95, (int) ( $o['quality'] ?? 80 ) ) );
+	$min     = max( 0, min( 90, (int) ( $o['min_saving'] ?? 10 ) ) );
+	$apply   = ! empty( $o['apply'] );
+	$restore = ! empty( $o['restore'] );
+	$ids     = array_values( array_filter( array_map( 'intval', (array) ( $o['ids'] ?? array() ) ) ) );
+	if ( ! $ids && ! empty( $o['post_type'] ) ) {
+		$posts = get_posts( array(
+			'post_type'        => sanitize_key( (string) $o['post_type'] ),
+			'post_status'      => 'publish',
+			'numberposts'      => -1,
+			'fields'           => 'ids',
+			'suppress_filters' => true,
+		) );
+		foreach ( $posts as $pid ) {
+			$t = (int) get_post_thumbnail_id( $pid );
+			if ( $t ) {
+				$ids[] = $t;
+			}
+		}
+		$ids = array_values( array_unique( $ids ) );
+	}
+	$ids     = array_slice( $ids, (int) ( $o['offset'] ?? 0 ), max( 1, min( 200, (int) ( $o['limit'] ?? 50 ) ) ) );
+	$uploads = wp_get_upload_dir();
+	$bdir    = trailingslashit( $uploads['basedir'] ) . 'eg-webp-backup/';
+	$rows    = array();
+	$saved   = 0;
+	foreach ( $ids as $id ) {
+		$file = get_attached_file( $id );
+		$row  = array( 'id' => $id );
+		if ( ! $file || ! is_file( $file ) || ! preg_match( '/\.(png|jpe?g)$/i', $file ) ) {
+			$rows[] = $row + array( 'skip' => 'sin imagen png/jpg' );
+			continue;
+		}
+		$webp   = $file . '.webp';
+		$rel    = ltrim( str_replace( wp_normalize_path( $uploads['basedir'] ), '', wp_normalize_path( $webp ) ), '/' );
+		$backup = $bdir . $rel;
+		$row['file'] = $rel;
+		if ( $restore ) {
+			if ( is_file( $backup ) && $apply ) {
+				$row['restored'] = @copy( $backup, $webp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+			} else {
+				$row['restored'] = is_file( $backup ) ? 'dry_run' : 'sin copia';
+			}
+			$rows[] = $row;
+			continue;
+		}
+		if ( ! is_file( $webp ) ) {
+			$rows[] = $row + array( 'skip' => 'no hay .webp de Imagify' );
+			continue;
+		}
+		if ( is_file( $backup ) ) {
+			$rows[] = $row + array( 'skip' => 'ya recomprimido (hay copia)' );
+			continue;
+		}
+		$editor = wp_get_image_editor( $file );
+		if ( is_wp_error( $editor ) ) {
+			$rows[] = $row + array( 'skip' => $editor->get_error_message() );
+			continue;
+		}
+		$editor->set_quality( $quality );
+		$base = wp_tempnam( 'eg-webp' );
+		$tmp  = $base . '.webp';
+		@unlink( $base ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		$res = $editor->save( $tmp, 'image/webp' );
+		if ( is_wp_error( $res ) || ! is_file( $res['path'] ) ) {
+			$rows[] = $row + array( 'skip' => is_wp_error( $res ) ? $res->get_error_message() : 'no se ha podido guardar' );
+			continue;
+		}
+		$before = filesize( $webp );
+		$after  = filesize( $res['path'] );
+		$pct    = $before ? round( 100 * ( $before - $after ) / $before ) : 0;
+		$row   += array( 'before_kb' => round( $before / 1024 ), 'after_kb' => round( $after / 1024 ), 'saving_pct' => $pct );
+		if ( $pct >= $min && $apply ) {
+			wp_mkdir_p( dirname( $backup ) );
+			if ( @copy( $webp, $backup ) && @copy( $res['path'], $webp ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors
+				$row['applied'] = true;
+				$saved         += $before - $after;
+			}
+		}
+		@unlink( $res['path'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		$rows[] = $row;
+	}
+	return array( 'ok' => true, 'applied' => $apply, 'quality' => $quality, 'saved_kb' => round( $saved / 1024 ), 'count' => count( $rows ), 'rows' => $rows );
+}

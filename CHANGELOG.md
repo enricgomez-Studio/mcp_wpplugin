@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.142.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/perf webp_recompress: {"ids": [...] | "post_type": "viatges", "quality": 80, "min_saving": 10, "apply": true}` recomprime a la misma resolución el `.webp` de tamaño completo que deja Imagify (`foto.png.webp`), desde la imagen de la mediateca. Solo lo cambia si ahorra al menos `min_saving` %; guarda el anterior en `uploads/eg-webp-backup/` (`restore: true` lo devuelve). Sin `apply` solo calcula. `limit`/`offset` para ir por tandas.
+- Gestión de la web (`perf`). Webs: clubdelviatger.cat (fotos de cabecera de las fichas: 437 KB → ~290 KB con igual o mejor calidad medida).
+
 ## 2.141.0 · 24/11/2026 · PR (Claude)
 
 - **Paso a `eg-studio/` en pausa por defecto.** En clubdelviatger.cat (Plesk ajeno) el plugin desapareció tras actualizar de la 2.136.0 a la 2.140.0 y hubo que reinstalarlo a mano; en local el mismo camino funciona y la causa aún no se conoce. Hasta entenderlo, las webs siguen funcionando desde su carpeta antigua con el cargador `eg-publicacion.php`. Se activa por web con `POST /update {"migrate": true}` (o `define( 'EG_PUB_MIGRATE', true )`).

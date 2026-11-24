@@ -25,9 +25,9 @@
  *                  se quita la tarea diaria (los WebP ya creados se quedan).
  *   listing_bg     Fondos de las fichas de los listados de JetEngine con la imagen destacada (o un campo de imagen) por
  *                  etiqueta dinámica: Elementor siempre pide el tamaño completo («full»), y cada tarjeta descarga la foto
- *                  original (hasta 2560 px) aunque se vea a 400 px. Con `true` (tamaño «large») o el nombre de un tamaño
- *                  («medium_large», «1536x1536»…) esas imágenes salen a ese tamaño, solo dentro de los listados de
- *                  JetEngine; las cabeceras y el resto de la web siguen igual. `false` lo quita.
+ *                  original (hasta 2560 px) aunque se vea a 400 px. `{"size": "large", "listings": [5896, 15686]}`: en
+ *                  esos listados (ID de la plantilla de listado) esas imágenes salen a ese tamaño. Hay que nombrar los
+ *                  listados: un listado usado como slider a pantalla completa necesita la foto grande. `false` lo quita.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -137,6 +137,7 @@ function eg_pub_perf_fixes_state() {
 	$state['cdn_fonts']['cdn']        = eg_pub_rocket_cdn_base();
 	$state['img_sizes']['sizes']      = is_array( $fixes['img_sizes'] ?? null ) ? $fixes['img_sizes'] : array();
 	$state['listing_bg']['size']      = eg_pub_listing_bg_size( $fixes['listing_bg'] ?? '' );
+	$state['listing_bg']['listings']  = is_array( $fixes['listing_bg'] ?? null ) ? (array) ( $fixes['listing_bg']['listings'] ?? array() ) : array();
 	$state['thumbs_webp']['next_run'] = wp_next_scheduled( 'eg_pub_thumbs_webp' ) ? gmdate( 'Y-m-d H:i', wp_next_scheduled( 'eg_pub_thumbs_webp' ) ) : null;
 	if ( defined( 'JET_ELEMENTS_VERSION' ) ) {
 		$state['jet_validator']['jet_elements'] = JET_ELEMENTS_VERSION;
@@ -362,11 +363,39 @@ function eg_pub_thumbs_webp_schedule( $on ) {
 
 /** Tamaño de imagen del ajuste listing_bg ('' si está apagado o el tamaño no existe en esta web). */
 function eg_pub_listing_bg_size( $value ) {
-	if ( empty( $value ) ) {
+	if ( empty( $value ) || ! is_array( $value ) || empty( $value['listings'] ) ) {
 		return '';
 	}
-	$size = is_string( $value ) ? sanitize_key( $value ) : 'large';
+	$size = sanitize_key( (string) ( $value['size'] ?? 'large' ) );
 	return in_array( $size, get_intermediate_image_sizes(), true ) ? $size : '';
+}
+
+/** Pila de documentos de Elementor que se están pintando (para saber en qué plantilla de listado estamos). */
+function eg_pub_listing_bg_docs( $push = null ) {
+	static $stack = array();
+	if ( true === $push ) {
+		array_pop( $stack );
+	} elseif ( null !== $push ) {
+		$stack[] = (int) $push;
+	}
+	return $stack;
+}
+
+/** ID de la plantilla de listado de JetEngine que se está pintando, o 0. */
+function eg_pub_listing_bg_current() {
+	if ( function_exists( 'jet_engine' ) && isset( jet_engine()->listings->data ) && method_exists( jet_engine()->listings->data, 'get_listing' ) ) {
+		$doc = jet_engine()->listings->data->get_listing();
+		if ( is_object( $doc ) && method_exists( $doc, 'get_main_id' ) && (int) $doc->get_main_id() ) {
+			return (int) $doc->get_main_id();
+		}
+	}
+	$stack = eg_pub_listing_bg_docs();
+	for ( $i = count( $stack ) - 1; $i >= 0; $i-- ) {
+		if ( 'jet-engine' === get_post_type( $stack[ $i ] ) ) {
+			return $stack[ $i ];
+		}
+	}
+	return 0;
 }
 
 /**
@@ -378,7 +407,8 @@ function eg_pub_listing_bg_src( $image, $attachment_id, $size, $icon ) {
 	if ( $busy || 'full' !== $size || ! is_array( $image ) || is_admin() || wp_doing_cron() ) {
 		return $image;
 	}
-	$want = eg_pub_listing_bg_size( eg_pub_perf_fixes()['listing_bg'] ?? '' );
+	$cfg  = eg_pub_perf_fixes()['listing_bg'] ?? array();
+	$want = eg_pub_listing_bg_size( $cfg );
 	if ( '' === $want ) {
 		return $image;
 	}
@@ -390,7 +420,7 @@ function eg_pub_listing_bg_src( $image, $attachment_id, $size, $icon ) {
 			break;
 		}
 	}
-	if ( ! $in_listing ) {
+	if ( ! $in_listing || ! in_array( eg_pub_listing_bg_current(), array_map( 'intval', (array) $cfg['listings'] ), true ) ) {
 		return $image;
 	}
 	$busy  = true;
@@ -403,6 +433,12 @@ add_action( 'plugins_loaded', function () {
 	$fixes = eg_pub_perf_fixes();
 	if ( ! empty( $fixes['listing_bg'] ) ) {
 		add_filter( 'wp_get_attachment_image_src', 'eg_pub_listing_bg_src', 99, 4 );
+		add_action( 'elementor/frontend/before_get_builder_content', function ( $document ) {
+			eg_pub_listing_bg_docs( is_object( $document ) && method_exists( $document, 'get_main_id' ) ? (int) $document->get_main_id() : 0 );
+		} );
+		add_action( 'elementor/frontend/get_builder_content', function () {
+			eg_pub_listing_bg_docs( true );
+		} );
 	}
 	if ( ! empty( $fixes['img_sizes'] ) && is_array( $fixes['img_sizes'] ) ) {
 		$map = $fixes['img_sizes'];

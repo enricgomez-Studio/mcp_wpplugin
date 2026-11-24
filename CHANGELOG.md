@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.133.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/perf fixes listing_bg` pasa a `{"size": "large", "listings": [IDs de plantillas de listado]}` y solo actúa en esos listados. Con `true` actuaba en todos, también en un listado usado como slider a pantalla completa (portada de clubdelviatger.cat), donde la foto de 1024 px se veía borrosa. El formato anterior (`true` o un tamaño) ya no activa nada. El estado devuelve `listing_bg.listings`.
+- Gestión de la web (`perf`). Webs: clubdelviatger.cat.
+
 ## 2.132.0 · 24/11/2026 · PR #200 + (Claude, a petición de Enric)
 
 - `/cpt queries`: `true` lista las consultas del Query Builder de JetEngine (id, nombre, tipo y ajustes principales: post_type, posts_per_page, orden…); `{"<id>": {"posts_per_page": 12}}` cambia esos ajustes dentro de la consulta y vacía la caché de WP Rocket (`dry_run` solo previsualiza). Una consulta con `posts_per_page: -1` anula el número de elementos del Listing Grid y su scroll infinito.

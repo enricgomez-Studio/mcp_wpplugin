@@ -15,6 +15,9 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 - `/perf fixes hero_preload: {"<tipo>": "featured" | "<URL>"}`: en las fichas de ese tipo de contenido precarga con prioridad alta la foto de cabecera que Elementor pinta como fondo (es el LCP y el navegador no la descubre hasta tener el CSS). `featured` = imagen destacada a tamaño completo. No cambia la imagen ni su calidad. `false` lo quita.
 - Gestión de la web (`perf`). Webs: clubdelviatger.cat (fichas /viatge/ y entradas del blog: LCP móvil 5-6,5 s).
 
+- `/perf fixes hero_preload: {"<tipo>": "featured" | "<URL>"}`: en las fichas de ese tipo de contenido precarga con prioridad alta la foto de cabecera que Elementor pinta como fondo (es el LCP y el navegador no la descubre hasta tener el CSS). `featured` = imagen destacada a tamaño completo. No cambia la imagen ni su calidad. `false` lo quita.
+- Gestión de la web (`perf`). Webs: clubdelviatger.cat (fichas /viatge/ y entradas del blog: LCP móvil 5-6,5 s).
+
 ## 2.139.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - El plugin pasa a la carpeta y el archivo **`eg-studio/eg-studio.php`** (antes `eg-publicacion/eg-publicacion.php`). Cada web se pasa sola tras actualizar (nuevo `includes/migracion.php`): al final de la primera petición con la versión nueva renombra la carpeta, cambia el plugin activo (también en multisitio y en la lista de actualizaciones automáticas) y borra el cargador antiguo. Si ya existe una `eg-studio/` subida a mano, se queda con la versión más nueva y borra la otra. Si falla (permisos), sigue funcionando desde la carpeta antigua, avisa en el escritorio y lo reintenta cada hora. `EG_PUB_NO_MIGRATE` lo impide.

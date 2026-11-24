@@ -6,7 +6,7 @@ Plugins para conectar con webs en WordPress via MCP
 
 Plugin de WordPress de enricgomez Studio para la gestión, el mantenimiento, la optimización y los contenidos de las webs del estudio. Funciona por bloques: **Blog**, **Elementor**, **WooCommerce**, **Gestión de la web** y **Servicios para el cliente** (Asistente IA). Los escenarios de Make lo usan por `/wp-json/eg/v1/…` con la cabecera `X-EG-Key`.
 
-**Nombre e identificadores (desde la v2.138.0).** Se llamaba «EG Publicación». Solo cambia el nombre visible. La carpeta y el archivo (`eg-publicacion/eg-publicacion.php`), el zip de las releases (`eg-publicacion.zip`), la página de ajustes (`?page=eg-publicacion`), las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key` y los ajustes y funciones `eg_pub_…` siguen igual a propósito: WordPress identifica el plugin activo por su carpeta y su archivo, y renombrarlos lo desactivaría en todas las webs al actualizar. No los cambies.
+**Nombre, carpeta e identificadores (desde la v2.139.0).** Se llamaba «EG Publicación» y vivía en `eg-publicacion/eg-publicacion.php`. Ahora es **EG Studio** en `eg-studio/eg-studio.php`, con la página de ajustes `?page=eg-studio` (la vieja redirige). Cada web se pasa sola a la carpeta nueva tras actualizar (`includes/migracion.php`): renombra la carpeta, cambia el plugin activo y borra el cargador antiguo, sin tocar la clave ni los ajustes. Si ya había una `eg-studio/` subida a mano, se queda la versión más nueva y borra la otra. La release lleva dos zips: `eg-studio.zip` (el normal) y `eg-publicacion.zip` (para las webs con versiones anteriores, con el cargador `eg-publicacion.php`); no quites el segundo mientras quede alguna web sin migrar. Siguen igual, a propósito: las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key`, los ajustes y funciones `eg_pub_…` y los nombres de las abilities (`eg-publicacion/…`). Para impedir el paso en una web: `define( 'EG_PUB_NO_MIGRATE', true );`.
 
 **Instalar a mano encima (desde la v2.138.0).** Si se sube el zip del plugin a una web que ya lo tiene (desde wp-admin, ManageWP u otro gestor), se reinstala sobre la copia existente, en su misma carpeta, sin dejar dos copias.
 
@@ -15,7 +15,7 @@ Plugin de WordPress de enricgomez Studio para la gestión, el mantenimiento, la 
 Varias sesiones de Claude pueden modificar este plugin en paralelo. Para no pisarse ni decidir sobre una versión que ya no es la actual:
 
 1. **Antes de cambiar o decidir nada**: `git pull` de `main`, mira la [última release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest), los PR abiertos y el [CHANGELOG.md](CHANGELOG.md). Parte siempre de `main` actualizado, nunca de una copia antigua.
-2. **Cada cambio en el código del plugin** (`eg-publicacion.php` o `includes/`) sube la versión en el mismo PR: cabecera `Version:` y `EG_PUB_VERSION`, iguales (si no coinciden, la Action falla). Si no se sube, el merge no genera release y el cambio queda en `main` sin llegar a las webs hasta la siguiente versión.
+2. **Cada cambio en el código del plugin** (`eg-studio.php` o `includes/`) sube la versión en el mismo PR: cabecera `Version:` y `EG_PUB_VERSION`, iguales (si no coinciden, la Action falla). Si no se sube, el merge no genera release y el cambio queda en `main` sin llegar a las webs hasta la siguiente versión.
 3. **Cada cambio añade su entrada en [CHANGELOG.md](CHANGELOG.md)** en el mismo PR, arriba del todo: versión, fecha, PR, quién lo hace, qué cambia y qué tipología, módulo y webs afecta. Un cambio solo de documentación no sube versión.
 4. Un PR por cambio, sin fusionar sin el OK de Enric. Después de fusionar, la rama de trabajo se reinicia desde `origin/main` antes del siguiente cambio.
 
@@ -70,7 +70,7 @@ Al actualizar desde la 2.7.x o anterior no hay que tocar nada: el blog queda act
 
 **Añadir algo nuevo.** Cada endpoint es un módulo de una tipología: se añade con el filtro `eg_pub_modules` (`'slug' => array( 'type' => 'woocommerce', 'routes' => array( 'ruta' ) )`) y registra su ruta solo si `eg_pub_module_enabled( 'slug' )`. Si hace falta una tipología nueva, se añade en `eg_pub_types()` (`includes/modulos.php`).
 
-**No cambiar el nombre ni la carpeta del plugin.** El plugin se llama «EG Publicación» y la release trae la carpeta `eg-publicacion/`. Desde la 2.7.2 las actualizaciones se instalan en la carpeta que ya tenga la web.
+**Carpeta del plugin.** El plugin se llama «EG Studio» y la release trae la carpeta `eg-studio/` (ver arriba el paso desde `eg-publicacion/`). Las actualizaciones se instalan en la carpeta que ya tenga la web.
 
 ### Mantener una web en una versión (desde la v2.6.0)
 
@@ -161,7 +161,7 @@ Servicio de pago para que el cliente gestione su blog y sus productos desde su p
 
 ### Instalación en una web
 
-1. Descarga `eg-publicacion.zip` de la última [release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest) (no el zip del código del repositorio, que crea la carpeta `mcp_wpplugin-main`). Desde la v2.7.2, si una web ya lo tiene en otra carpeta, las actualizaciones se instalan en esa misma carpeta y no dejan dos copias.
+1. Descarga `eg-studio.zip` de la última [release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest) (no el zip del código del repositorio, que crea la carpeta `mcp_wpplugin-main`). Desde la v2.7.2, si una web ya lo tiene en otra carpeta, las actualizaciones se instalan en esa misma carpeta y no dejan dos copias.
 2. En WordPress: Plugins → Añadir nuevo → Subir plugin, y actívalo.
 3. Si la web tenía la versión antigua como mu-plugin, borra `wp-content/mu-plugins/eg-studio-rest-publisher.php`. La clave y los ajustes se conservan, así que Make sigue funcionando.
 4. La clave para Make está en Ajustes → EG Publicación.
@@ -178,7 +178,7 @@ Solo se pueden instalar los de la lista (`eg_pub_own_plugins`): de momento [EG C
 
 ### Publicar una versión nueva
 
-1. Cambia la versión en `eg-publicacion.php` (cabecera `Version:` y constante `EG_PUB_VERSION`) y añade la entrada en `CHANGELOG.md`.
+1. Cambia la versión en `eg-studio.php` (cabecera `Version:` y constante `EG_PUB_VERSION`) y añade la entrada en `CHANGELOG.md`.
 2. Haz commit y súbelo a `main` (por PR).
 3. La GitHub Action crea la release `vX.Y.Z` con el zip (si esa versión ya tenía release, no hace nada). Cada web la detecta en unas horas y se actualiza sola (o al momento con "Buscar actualizaciones" en la fila del plugin).
 4. Desde la v2.17.0 se puede instalar al momento desde Make: `POST /wp-json/eg/v1/update` (en el escenario de cada web, `path: update`, cuerpo `{}`). Con `{"dry_run": true}` solo dice la versión instalada (`installed`) y la última (`latest`). Está activo en todas las webs, sea cual sea su tipología, y respeta «Mantener esta web en la versión». Devuelve `updated`, `version` (la que queda instalada) y `active`.

@@ -35,7 +35,15 @@ function eg_pub_get_key() {
  * Página de ajustes (solo administradores): muestra la clave y el autor.
  * ==================================================================== */
 add_action( 'admin_menu', function () {
-	add_options_page( 'EG Studio', 'EG Studio', 'manage_options', 'eg-publicacion', 'eg_pub_settings_page' );
+	add_options_page( 'EG Studio', 'EG Studio', 'manage_options', 'eg-studio', 'eg_pub_settings_page' );
+} );
+
+// La página de ajustes se llamaba ?page=eg-publicacion hasta la v2.138.0: los enlaces viejos siguen funcionando.
+add_action( 'admin_init', function () {
+	if ( isset( $_GET['page'] ) && 'eg-publicacion' === $_GET['page'] && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		wp_safe_redirect( admin_url( 'options-general.php?page=eg-studio' ) );
+		exit;
+	}
 } );
 
 function eg_pub_settings_page() {

@@ -2,7 +2,8 @@
 /**
  * Actualizaciones desde las releases de GitHub (enricgomez-Studio/mcp_wpplugin).
  *
- * Cada release lleva adjunto eg-publicacion.zip (lo genera la GitHub Action al
+ * Cada release lleva adjuntos eg-studio.zip (el que usan las webs desde la v2.139.0) y eg-publicacion.zip (el que
+ * buscan las versiones anteriores; mismo contenido en la carpeta antigua). Los genera la GitHub Action al
  * subir a main una versión nueva). Si el repositorio es privado, definir en wp-config.php:
  *   define( 'EG_PUB_GITHUB_TOKEN', 'github_pat_...' );  // permiso de solo lectura de Contents
  */
@@ -11,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_SLUG          = 'eg-publicacion';
+const EG_PUB_SLUG          = 'eg-studio';
 const EG_PUB_RELEASE_CACHE = 'eg_pub_gh_release';
 const EG_PUB_OPTION_HOLD   = 'eg_pub_hold_version';
 
@@ -77,7 +78,7 @@ add_filter( 'http_request_args', function ( $args, $url ) {
 		return $args;
 	}
 	$args['headers'] = isset( $args['headers'] ) ? (array) $args['headers'] : array();
-	$args['headers']['User-Agent'] = 'EG-Publicacion/' . EG_PUB_VERSION . '; ' . home_url( '/' );
+	$args['headers']['User-Agent'] = 'EG-Studio/' . EG_PUB_VERSION . '; ' . home_url( '/' );
 	if ( eg_pub_gh_token() ) {
 		$args['headers']['Authorization'] = 'Bearer ' . eg_pub_gh_token();
 	}
@@ -135,7 +136,7 @@ add_filter( 'plugins_api', function ( $result, $action, $args ) {
 	);
 }, 10, 3 );
 
-// Instalar la versión nueva en la misma carpeta que la actual. El zip de la release trae "eg-publicacion/"
+// Instalar la versión nueva en la misma carpeta que la actual (el paso a eg-studio/ lo hace includes/migracion.php). El zip de la release trae "eg-studio/"
 // y el automático de GitHub "enricgomez-mcp_wpplugin-<hash>/"; si la web lo tiene en otra carpeta
 // (p. ej. "mcp_wpplugin-main", de instalarlo con el zip del repositorio), sin esto WordPress dejaría dos copias.
 add_filter( 'upgrader_source_selection', function ( $source, $remote_source, $upgrader, $hook_extra = array() ) {
@@ -161,7 +162,7 @@ add_filter( 'upgrader_source_selection', function ( $source, $remote_source, $up
 	if ( ! empty( $hook_extra['plugin'] ) || ( $hook_extra['type'] ?? '' ) !== 'plugin' || ! $wp_filesystem ) {
 		return $source; // Las actualizaciones normales ya las lleva el filtro anterior.
 	}
-	if ( ! $wp_filesystem->exists( trailingslashit( $source ) . 'eg-publicacion.php' ) ) {
+	if ( ! $wp_filesystem->exists( trailingslashit( $source ) . 'eg-studio.php' ) && ! $wp_filesystem->exists( trailingslashit( $source ) . 'eg-publicacion.php' ) ) {
 		return $source;
 	}
 	$folder = dirname( EG_PUB_BASENAME );
@@ -193,7 +194,7 @@ add_filter( 'upgrader_install_package_result', function ( $result ) {
 	}
 	$b = $eg_pub_reinstall_backup;
 	$eg_pub_reinstall_backup = null;
-	if ( is_wp_error( $result ) || ! $wp_filesystem->exists( trailingslashit( $b['current'] ) . 'eg-publicacion.php' ) ) {
+	if ( is_wp_error( $result ) || ! $wp_filesystem->exists( trailingslashit( $b['current'] ) . basename( EG_PUB_BASENAME ) ) ) {
 		$wp_filesystem->delete( $b['current'], true );
 		$wp_filesystem->move( $b['backup'], $b['current'], true ); // Falló: se recupera la versión anterior.
 	} else {
@@ -216,7 +217,7 @@ add_action( 'upgrader_process_complete', function () {
 // Enlaces "Ajustes" (el primero) y "Buscar actualizaciones" en la fila del plugin.
 add_filter( 'plugin_action_links_' . EG_PUB_BASENAME, function ( $links ) {
 	if ( current_user_can( 'manage_options' ) ) {
-		array_unshift( $links, '<a href="' . esc_url( admin_url( 'options-general.php?page=eg-publicacion' ) ) . '">Ajustes</a>' );
+		array_unshift( $links, '<a href="' . esc_url( admin_url( 'options-general.php?page=eg-studio' ) ) . '">Ajustes</a>' );
 	}
 	$url = wp_nonce_url( admin_url( 'plugins.php?eg_pub_check=1' ), 'eg_pub_check' );
 	$links[] = '<a href="' . esc_url( $url ) . '">Buscar actualizaciones</a>';

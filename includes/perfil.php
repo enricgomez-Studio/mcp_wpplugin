@@ -4,7 +4,7 @@
  *   POST /wp-json/eg/v1/perf
  *   urls        ["/", "/producto/criar-juntos/", "/carrito/"]  páginas públicas, como un visitante sin sesión (máx. 10)
  *   admin_urls  ["/wp-admin/", "/wp-admin/edit.php?post_type=product"]  pantallas del admin, con la sesión del usuario
- *               de EG Publicación (una sesión temporal que se cierra al acabar)
+ *               de EG Studio (una sesión temporal que se cierra al acabar)
  *   wait        false lanza las peticiones sin esperarlas (para páginas que tardan más de un minuto); los
  *               resultados se recogen después con results
  *   results     true devuelve (y borra) los perfiles guardados que nadie ha recogido todavía

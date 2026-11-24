@@ -1,6 +1,6 @@
 <?php
 /**
- * Módulo «wpml-widgets»: clase que WPML usa para los repetidores de los widgets registrados por EG Publicación.
+ * Módulo «wpml-widgets»: clase que WPML usa para los repetidores de los widgets registrados por EG Studio.
  * Se carga desde eg_pub_wpml_widgets_define_class() solo cuando existe WPML_Elementor_Module_With_Items.
  */
 

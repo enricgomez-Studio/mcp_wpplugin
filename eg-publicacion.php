@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       EG Publicación
- * Description:       Endpoints /wp-json/eg/v1/ para los escenarios de Make de enricgomez Studio, por tipología de web: Blog (posts con idiomas de WPML, categoría, SEO de Yoast o Rank Math e imágenes), Elementor (landings y plantillas), WooCommerce (productos) y Gestión de la web (textos, menús, redirecciones, estado de páginas y enlaces por idioma). Con WordPress 6.9 también como Abilities para el MCP Adapter. La clave de acceso está en Ajustes → EG Publicación. Se actualiza solo desde GitHub.
- * Version:           2.137.0
+ * Plugin Name:       EG Studio
+ * Description:       Gestión, mantenimiento, optimización y contenidos de las webs de enricgomez Studio. Por bloques: Blog, Elementor, WooCommerce, Gestión de la web y Servicios para el cliente (Asistente IA para gestionar el blog y los productos desde Claude o ChatGPT). Endpoints /wp-json/eg/v1/ para los escenarios de Make, con la clave de Ajustes → EG Studio. Se actualiza solo desde GitHub.
+ * Version:           2.138.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            enricgomez Studio
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_VERSION = '2.137.0';
+const EG_PUB_VERSION = '2.138.0';
 const EG_PUB_REPO    = 'enricgomez-Studio/mcp_wpplugin';
 define( 'EG_PUB_BASENAME', plugin_basename( __FILE__ ) );
 
@@ -29,7 +29,7 @@ if ( function_exists( 'eg_pub_get_key' ) ) {
 	$eg_pub_other = str_replace( wp_normalize_path( ABSPATH ), '', wp_normalize_path( (string) $eg_pub_other ) );
 	add_action( 'admin_notices', function () use ( $eg_pub_other ) {
 		$is_mu = false !== strpos( $eg_pub_other, 'mu-plugins/' );
-		echo '<div class="notice notice-error"><p><strong>EG Publicación:</strong> ya hay otra copia cargada en <code>' . esc_html( $eg_pub_other ) . '</code>. '
+		echo '<div class="notice notice-error"><p><strong>EG Studio:</strong> ya hay otra copia cargada en <code>' . esc_html( $eg_pub_other ) . '</code>. '
 			. ( $is_mu
 				? 'Es la versión antigua: bórrala para que funcione este plugin (la clave y los ajustes se conservan).'
 				: 'El plugin está instalado dos veces: desactiva y borra una de las dos copias en Plugins (la clave y los ajustes se conservan).' )

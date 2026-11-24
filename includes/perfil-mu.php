@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: EG Publicación · perfil de rendimiento
- * Description: Lo instala /wp-json/eg/v1/perf de EG Publicación. No hace nada salvo en las peticiones que lanza ese endpoint (con un token de un solo uso que caduca en minutos): mide cuánto tarda en cargar cada plugin, cada función enganchada, las consultas SQL y las llamadas HTTP externas, y guarda el resultado.
+ * Plugin Name: EG Studio · perfil de rendimiento
+ * Description: Lo instala /wp-json/eg/v1/perf de EG Studio. No hace nada salvo en las peticiones que lanza ese endpoint (con un token de un solo uso que caduca en minutos): mide cuánto tarda en cargar cada plugin, cada función enganchada, las consultas SQL y las llamadas HTTP externas, y guarda el resultado.
  * Version: 2
  */
 

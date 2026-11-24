@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugins propios de enricgomez Studio que se instalan desde EG Publicación (el servidor solo deja instalar por
+ * Plugins propios de enricgomez Studio que se instalan desde EG Studio (el servidor solo deja instalar por
  * WP-CLI plugins del repositorio oficial):
  *   POST /wp-json/eg/v1/plugins
  * Está siempre activo, sea cual sea la tipología de la web.

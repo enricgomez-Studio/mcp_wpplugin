@@ -50,7 +50,7 @@ function eg_pub_status_find_path( $path ) {
 
 /**
  * Guarda la redirección de una URL que se despublica con el mismo /redirect del plugin (Rank Math, Redirection o
- * la lista propia de EG Publicación). Devuelve from, code y ok, o el error.
+ * la lista propia de EG Studio). Devuelve from, code y ok, o el error.
  */
 function eg_pub_status_gone( $url, $gone ) {
 	$req = new WP_REST_Request( 'POST', '/eg/v1/redirect' );

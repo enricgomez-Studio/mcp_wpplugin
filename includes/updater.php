@@ -16,7 +16,7 @@ const EG_PUB_RELEASE_CACHE = 'eg_pub_gh_release';
 const EG_PUB_OPTION_HOLD   = 'eg_pub_hold_version';
 
 /**
- * Mantener esta web en la versión instalada: se marca en Ajustes → EG Publicación,
+ * Mantener esta web en la versión instalada: se marca en Ajustes → EG Studio,
  * o en wp-config.php con define( 'EG_PUB_HOLD_VERSION', true ).
  */
 function eg_pub_update_held() {
@@ -121,7 +121,7 @@ add_filter( 'plugins_api', function ( $result, $action, $args ) {
 	}
 	$release = eg_pub_gh_release();
 	return (object) array(
-		'name'          => 'EG Publicación',
+		'name'          => 'EG Studio',
 		'slug'          => EG_PUB_SLUG,
 		'version'       => $release ? $release['version'] : EG_PUB_VERSION,
 		'author'        => '<a href="https://www.enricgomez.com">enricgomez Studio</a>',

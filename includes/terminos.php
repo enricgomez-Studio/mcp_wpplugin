@@ -384,7 +384,7 @@ function eg_pub_term_bottom_field( $term ) {
 				'media_buttons' => false,
 			) );
 			?>
-			<p class="description">EG Publicación: se muestra debajo de los productos de esta categoría. Las preguntas como «h3» seguidas de un párrafo, bajo un «h2» de preguntas frecuentes, salen también como schema FAQ.</p>
+			<p class="description">EG Studio: se muestra debajo de los productos de esta categoría. Las preguntas como «h3» seguidas de un párrafo, bajo un «h2» de preguntas frecuentes, salen también como schema FAQ.</p>
 		</td>
 	</tr>
 	<?php

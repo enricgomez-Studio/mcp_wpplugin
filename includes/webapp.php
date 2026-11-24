@@ -365,7 +365,7 @@ function eg_pub_webapp_sw( array $s ) {
 		'exclude' => array_values( $s['exclude'] ),
 		'icon'    => (string) ( ( (array) get_option( EG_PUB_WEBAPP_OPT . '_icons', array() ) )['icon-192'] ?? '' ),
 	);
-	return '/* EG Publicación · webapp */
+	return '/* EG Studio · webapp */
 const CFG = ' . wp_json_encode( $cfg, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . ';
 const STATIC_CACHE = "eg-static-" + CFG.v, PAGE_CACHE = "eg-page-" + CFG.v;
 const STATIC_RE = /\.(css|js|woff2?|ttf|png|jpe?g|webp|avif|gif|svg)$/i;
@@ -423,7 +423,7 @@ self.addEventListener("notificationclick", e => {
 
 /** SW que se desinstala: lo reciben los móviles que tenían la webapp cuando el módulo se apaga. */
 function eg_pub_webapp_sw_kill() {
-	return '/* EG Publicación · webapp desactivada */
+	return '/* EG Studio · webapp desactivada */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("eg-")).map(k => caches.delete(k))))

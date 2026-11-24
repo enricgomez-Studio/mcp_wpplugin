@@ -16,7 +16,7 @@ const EG_PUB_ABILITY_CATEGORY = 'eg-publicacion';
 add_action( 'wp_abilities_api_categories_init', function () {
 	if ( function_exists( 'wp_register_ability_category' ) ) {
 		wp_register_ability_category( EG_PUB_ABILITY_CATEGORY, array(
-			'label'       => 'EG Publicación',
+			'label'       => 'EG Studio',
 			'description' => 'Publicación de posts, landings, textos, plantillas, menús y redirecciones de enricgomez Studio.',
 		) );
 	}
@@ -97,7 +97,7 @@ function eg_pub_ability_defs() {
 			'module'      => '',
 			'cap'         => 'edit_posts',
 			'label'       => 'Estado del plugin',
-			'description' => 'Versión de EG Publicación, tipologías y módulos activos, si la versión está retenida, idiomas (WPML) y plugins relevantes de la web.',
+			'description' => 'Versión de EG Studio, tipologías y módulos activos, si la versión está retenida, idiomas (WPML) y plugins relevantes de la web.',
 			'annotations' => $read,
 			'input'       => array(),
 			'execute'     => 'eg_pub_ability_status',
@@ -106,7 +106,7 @@ function eg_pub_ability_defs() {
 			'module'      => 'blog',
 			'cap'         => 'publish_posts',
 			'label'       => 'Publicar o actualizar un post',
-			'description' => 'Crea o actualiza un post del blog por notion_id, con idioma y traducción (WPML), categoría, SEO de Rank Math, imagen destacada y fecha de programación. El autor es el configurado en Ajustes → EG Publicación.',
+			'description' => 'Crea o actualiza un post del blog por notion_id, con idioma y traducción (WPML), categoría, SEO de Rank Math, imagen destacada y fecha de programación. El autor es el configurado en Ajustes → EG Studio.',
 			'annotations' => $write,
 			'input'       => array(
 				'required'   => array( 'notion_id', 'title', 'content' ),

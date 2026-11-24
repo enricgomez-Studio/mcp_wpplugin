@@ -2,9 +2,11 @@
 
 Plugins para conectar con webs en WordPress via MCP
 
-## EG Publicación
+## EG Studio (antes EG Publicación)
 
-Plugin de WordPress de enricgomez Studio. Expone `/wp-json/eg/v1/publish`, que usa el escenario de Make "Blogs clientes: Notion → WordPress" para publicar los posts de blog de los clientes (idioma y traducción WPML, categoría, SEO de Rank Math, imagen destacada, imagen dentro del contenido y aviso por email).
+Plugin de WordPress de enricgomez Studio para la gestión, el mantenimiento, la optimización y los contenidos de las webs del estudio. Funciona por bloques: **Blog**, **Elementor**, **WooCommerce**, **Gestión de la web** y **Servicios para el cliente** (Asistente IA). Los escenarios de Make lo usan por `/wp-json/eg/v1/…` con la cabecera `X-EG-Key`.
+
+**Nombre e identificadores (desde la v2.138.0).** Se llamaba «EG Publicación». Solo cambia el nombre visible. La carpeta y el archivo (`eg-publicacion/eg-publicacion.php`), el zip de las releases (`eg-publicacion.zip`), la página de ajustes (`?page=eg-publicacion`), las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key` y los ajustes y funciones `eg_pub_…` siguen igual a propósito: WordPress identifica el plugin activo por su carpeta y su archivo, y renombrarlos lo desactivaría en todas las webs al actualizar. No los cambies.
 
 ### Cómo trabajamos en este repositorio
 

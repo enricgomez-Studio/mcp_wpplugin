@@ -18,6 +18,9 @@
  * formato simplificado (name, title, type, description, options «valor::Etiqueta», width); un campo con el mismo name se
  * actualiza y `"remove": true` lo quita. `labels` (`{"<post_type>": {"name": …, "singular_name": …}}`) cambia sus
  * etiquetas. Los valores ya guardados en las entradas no se tocan.
+ * `queries` lee o cambia consultas del Query Builder de JetEngine: `true` las lista (id, nombre, tipo y sus ajustes principales);
+ * `{"<id>": {"posts_per_page": 12}}` cambia esos ajustes dentro de la consulta (en la parte de su tipo: posts, terms…)
+ * y vacía la caché de WP Rocket. Con dry_run solo dice qué cambiaría.
  * `rewrite` (`{"<post_type>": "<base>"}`) cambia la base de las URL de un CPT ya registrado, de JetEngine o de CPT UI
  * (este no necesita JetEngine), y regenera los enlaces permanentes.
  */
@@ -164,6 +167,9 @@ function eg_pub_cpt_handle( WP_REST_Request $r ) {
 	}
 	if ( ! function_exists( 'jet_engine' ) || empty( jet_engine()->cpt ) ) {
 		return eg_pub_error( 'eg_no_jetengine', 'JetEngine no está activo en esta web.' );
+	}
+	if ( isset( $p['queries'] ) && false !== $p['queries'] ) {
+		return new WP_REST_Response( eg_pub_jet_queries( $p['queries'], ! empty( $p['dry_run'] ) ), 200 );
 	}
 	$before = eg_pub_cpt_list();
 	if ( ! empty( $p['dry_run'] ) || ( empty( $p['post_type'] ) && empty( $p['taxonomies'] ) && empty( $p['entries'] ) && empty( $p['listings'] ) && empty( $p['fields'] ) && empty( $p['labels'] ) ) ) {
@@ -537,4 +543,49 @@ function eg_pub_cpt_listing( $l ) {
 	delete_post_meta( $id, '_elementor_css' );
 	delete_post_meta( $id, '_elementor_element_cache' );
 	return array( 'key' => $key, 'id' => (int) $id, 'created' => ! $found );
+}
+
+/**
+ * Consultas del Query Builder de JetEngine (tabla jet_post_types, estado «query»). `$set` = true solo lista;
+ * `{"<id>": {ajuste: valor}}` cambia esos ajustes dentro de la parte de su tipo (posts, terms, users…).
+ */
+function eg_pub_jet_queries( $set, $dry_run ) {
+	global $wpdb;
+	$table = $wpdb->prefix . 'jet_post_types';
+	$rows  = $wpdb->get_results( "SELECT id, slug, labels, args FROM {$table} WHERE status = 'query' ORDER BY id", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$keys  = array( 'post_type', 'posts_per_page', 'post_status', 'orderby', 'order', 'number', 'taxonomy', 'paged', 'offset' );
+	$out   = array( 'ok' => true, 'dry_run' => $dry_run, 'queries' => array(), 'changed' => array() );
+	$set   = is_array( $set ) ? $set : array();
+	foreach ( (array) $rows as $row ) {
+		$args   = (array) jet_engine_safe_unserialize_array( $row['args'], 'eg_pub_jet_queries' );
+		$labels = (array) jet_engine_safe_unserialize_array( $row['labels'], 'eg_pub_jet_queries' );
+		$type   = (string) ( $args['query_type'] ?? '' );
+		$part   = ( '' !== $type && isset( $args[ $type ] ) && is_array( $args[ $type ] ) ) ? $args[ $type ] : array();
+		$id     = (string) (int) $row['id'];
+		if ( isset( $set[ $id ] ) && is_array( $set[ $id ] ) && '' !== $type ) {
+			$before = array_intersect_key( $part, $set[ $id ] );
+			foreach ( $set[ $id ] as $k => $v ) {
+				$part[ sanitize_key( $k ) ] = is_scalar( $v ) ? $v : (array) $v;
+			}
+			$args[ $type ] = $part;
+			if ( ! $dry_run ) {
+				$wpdb->update( $table, array( 'args' => maybe_serialize( $args ) ), array( 'id' => (int) $row['id'] ) );
+			}
+			$out['changed'][] = array( 'id' => (int) $id, 'before' => (object) $before, 'after' => (object) $set[ $id ] );
+		}
+		$out['queries'][] = array(
+			'id'       => (int) $id,
+			'name'     => (string) ( $labels['name'] ?? ( $args['name'] ?? $row['slug'] ) ),
+			'type'     => $type,
+			'settings' => (object) array_intersect_key( $part, array_flip( $keys ) ),
+		);
+	}
+	$missing = array_values( array_diff( array_map( 'strval', array_keys( $set ) ), array_map( fn( $c ) => (string) $c['id'], $out['changed'] ) ) );
+	if ( $missing ) {
+		$out['missing'] = $missing;
+	}
+	if ( $out['changed'] && ! $dry_run && function_exists( 'rocket_clean_domain' ) ) {
+		rocket_clean_domain();
+	}
+	return $out;
 }

@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.129.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/scripts` admite `position: "head_top"`: el código se imprime al principio del `<head>` (prioridad 1 de `wp_head`), antes de las hojas de estilo y del CSS en línea de Elementor. Sirve para precargar la imagen principal: con `head` salía al final de un `<head>` de 275 KB y el navegador la descubría tarde.
+- `/seo-tech llms_static` (`true`/`false`): guarda el llms.txt de Rank Math como fichero `llms.txt` en la raíz para que el servidor lo sirva sin cargar WordPress (el virtual tardaba 2-4 s y PageSpeed daba «Timed out fetching resource» en la auditoría de llms.txt). Se rehace cada hora y 3 minutos después de publicar o guardar una entrada; solo escribe si la respuesta es Markdown con encabezado y no pisa un llms.txt que no sea nuestro. `false` lo borra. El estado devuelve `llms_static`.
+- Gestión de la web (módulos `scripts` y `seo-tecnico`). Webs: hotelmiamicalella.com (PageSpeed). Sirve en todas las webs con Rank Math.
+
 ## 2.128.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/perf fixes listing_bg` (`true` = tamaño «large», o el nombre de otro tamaño, p. ej. `"medium_large"`): en las fichas de los listados de JetEngine, las imágenes que Elementor pide a tamaño completo por etiqueta dinámica (fondo con la imagen destacada o un campo de imagen) salen a ese tamaño. Cada tarjeta dejaba de descargar la foto original (hasta 2560 px, 600-900 KB en WebP) para verse a 400 px. Solo actúa dentro de los listados; cabeceras y resto de la web igual. Al cambiarlo vacía la caché de Elementor y de WP Rocket. El estado devuelve `listing_bg.size`.

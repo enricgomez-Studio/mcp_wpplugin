@@ -1,4 +1,4 @@
-# Registro de cambios de EG Publicación
+# Registro de cambios de EG Studio (antes EG Publicación)
 
 Historial del plugin EG Publicación, de lo más nuevo a lo más antiguo. Es el registro común de los cambios del repositorio: antes de cambiar o decidir nada sobre el plugin, léelo junto con la [última release](https://github.com/enricgomez-Studio/mcp_wpplugin/releases/latest), y añade aquí tu cambio en el mismo PR (ver «Cómo trabajamos en este repositorio» en el [README](README.md)).
 
@@ -9,6 +9,13 @@ Cada entrada indica la versión, la fecha en que se publicó la release (UTC), e
 Cambios ya fusionados en `main` que aún no tienen release (no han subido la versión). Al publicar la siguiente versión, se mueven a su entrada.
 
 - Nada por ahora.
+
+## 2.138.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- El plugin pasa a llamarse **EG Studio** (antes EG Publicación) y su descripción explica lo que hace hoy: gestión, mantenimiento, optimización y contenidos de las webs del estudio, por bloques. Solo cambia el nombre visible (Plugins, Ajustes, menú, avisos y emails). La carpeta, el archivo, el zip, las rutas `/wp-json/eg/v1/`, la cabecera `X-EG-Key` y los ajustes siguen igual, así que no hay que tocar nada en Make ni en las webs.
+- Ajustes → EG Studio: nuevo apartado «Servicios para el cliente» con el estado del Asistente IA (activo o apagado, ámbitos, conexiones) y el enlace a sus conexiones.
+- Subir el zip a mano (Plugins → Añadir nuevo → Subir, ManageWP u otro gestor) en una web que ya tiene el plugin ahora lo **reinstala encima** de la copia que funciona, en su misma carpeta, aunque el zip traiga otra (p. ej. `mcp_wpplugin-main`). Antes se instalaba como un plugin nuevo y las dos copias chocaban, o se paraba con «la carpeta ya existe». La copia anterior se aparta durante la instalación y se recupera si algo falla. Sigue activo y conserva los ajustes. Solo afecta a paquetes que contienen `eg-publicacion.php`; el resto de plugins se instalan como siempre.
+- Webs: todas.
 
 ## 2.137.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 

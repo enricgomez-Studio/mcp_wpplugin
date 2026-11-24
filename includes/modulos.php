@@ -1,6 +1,6 @@
 <?php
 /**
- * Qué hace el plugin en cada web, por tipología (Ajustes → EG Publicación): Blog, Elementor, WooCommerce y
+ * Qué hace el plugin en cada web, por tipología (Ajustes → EG Studio): Blog, Elementor, WooCommerce y
  * Gestión de la web. Cada tipología agrupa módulos (slug => endpoints); un módulo de una tipología apagada no
  * registra sus endpoints ni sus abilities. Lo nuevo se añade como módulo de su tipología con el filtro
  * eg_pub_modules ('type' => 'woocommerce', etc.).
@@ -53,7 +53,7 @@ function eg_pub_modules() {
 /**
  * Tipologías activas en esta web. Desde la 2.92.0 están activas siempre todas las que la web puede usar (Blog y
  * Gestión siempre, Elementor y WooCommerce si esos plugins están activos), salvo las que se apaguen a mano en
- * Ajustes → EG Publicación. Las listas de tipologías marcadas que guardaban las versiones anteriores ya no
+ * Ajustes → EG Studio. Las listas de tipologías marcadas que guardaban las versiones anteriores ya no
  * cuentan: al actualizar, cada web pasa a tener todo lo que puede usar sin ir web a web.
  */
 function eg_pub_active_types() {

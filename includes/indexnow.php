@@ -1,6 +1,6 @@
 <?php
 /**
- * Optional IndexNow notification for posts published through EG Publicación.
+ * Optional IndexNow notification for posts published through EG Studio.
  * Since 2.71.0 enabled by default unless the site is hidden from search engines or another plugin already submits.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -53,7 +53,7 @@ function eg_pub_indexnow_settings() {
     echo '<div class="wrap"><h1>EG IndexNow</h1><p>Comprueba primero que ningún plugin SEO o de IndexNow envíe ya las URLs. Si existe otro emisor, deja esta opción desactivada.</p>';
     echo '<form method="post">';
     wp_nonce_field( 'eg_indexnow_save' );
-    echo '<p><label><input type="checkbox" name="eg_indexnow_enabled" value="1" ' . checked( eg_pub_indexnow_enabled(), true, false ) . '> Activar avisos IndexNow para artículos publicados mediante EG Publicación</label></p>';
+    echo '<p><label><input type="checkbox" name="eg_indexnow_enabled" value="1" ' . checked( eg_pub_indexnow_enabled(), true, false ) . '> Activar avisos IndexNow para artículos publicados mediante EG Studio</label></p>';
     echo '<p>URL pública de verificación: <code>' . esc_html( home_url( '/?eg_indexnow_key=1' ) ) . '</code></p>';
     echo '<p><button class="button button-primary" type="submit" name="eg_indexnow_save" value="1">Guardar</button></p></form></div>';
 }

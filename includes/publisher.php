@@ -35,7 +35,7 @@ function eg_pub_get_key() {
  * Página de ajustes (solo administradores): muestra la clave y el autor.
  * ==================================================================== */
 add_action( 'admin_menu', function () {
-	add_options_page( 'EG Publicación', 'EG Publicación', 'manage_options', 'eg-publicacion', 'eg_pub_settings_page' );
+	add_options_page( 'EG Studio', 'EG Studio', 'manage_options', 'eg-publicacion', 'eg_pub_settings_page' );
 } );
 
 function eg_pub_settings_page() {
@@ -64,7 +64,7 @@ function eg_pub_settings_page() {
 		if ( ! empty( $_POST['eg_pub_test'] ) ) {
 			$sent = eg_pub_send_mail(
 				'Prueba de aviso de publicación – ' . get_bloginfo( 'name' ),
-				"Este es un email de prueba del plugin EG Publicación.\n\nSi lo recibes, los avisos de posts publicados llegarán a esta dirección.\n\n" . home_url( '/' )
+				"Este es un email de prueba del plugin EG Studio.\n\nSi lo recibes, los avisos de posts publicados llegarán a esta dirección.\n\n" . home_url( '/' )
 			);
 			echo $sent
 				? '<div class="updated"><p>Email de prueba enviado. Revisa también la carpeta de spam.</p></div>'
@@ -76,8 +76,8 @@ function eg_pub_settings_page() {
 	$mail   = eg_pub_notify_email();
 	?>
 	<div class="wrap">
-		<h1>EG Publicación (Make)</h1>
-		<p>Datos para los escenarios de Make de esta web.</p>
+		<h1>EG Studio</h1>
+		<p>Gestión, mantenimiento, optimización y contenidos de esta web. Abajo, la clave para los escenarios de Make y los bloques activos.</p>
 		<table class="form-table">
 			<tr>
 				<th>Endpoints</th>
@@ -137,6 +137,20 @@ function eg_pub_settings_page() {
 							</label>
 						<?php endforeach; ?>
 						<p class="description">Todas usan la misma clave. Vienen activadas todas las que la web puede usar (Elementor y WooCommerce se encienden solos al activar esos plugins); desmarca solo lo que no quieras en esta web. Lo que está apagado no responde (404) ni aparece como ability.</p>
+					</td>
+				</tr>
+				<tr>
+					<th>Servicios para el cliente</th>
+					<td>
+						<?php if ( function_exists( 'eg_pub_ai_service' ) ) : $eg_pub_ai = eg_pub_ai_service(); ?>
+							<strong>Asistente IA</strong>: el cliente gestiona el blog o los productos desde su Claude o ChatGPT.
+							<?php if ( $eg_pub_ai['enabled'] ) : ?>
+								Activo (<?php echo esc_html( implode( ', ', $eg_pub_ai['scopes'] ) ?: 'sin ámbitos' ); ?>, <?php echo $eg_pub_ai['publish'] ? 'puede publicar' : 'solo borradores'; ?>), <?php echo (int) count( eg_pub_ai_connections() ); ?> conexiones. <a href="<?php echo esc_url( admin_url( 'admin.php?page=eg-asistente' ) ); ?>">Ver conexiones</a>
+							<?php else : ?>
+								<em>Apagado.</em>
+							<?php endif; ?>
+							<p class="description">Servicio de pago: se activa desde Make con la ruta <code>/assistant</code>, no desde aquí.</p>
+						<?php endif; ?>
 					</td>
 				</tr>
 				<tr>
@@ -649,7 +663,7 @@ add_action( 'eg_pub_notify_published', function ( $post_id ) {
 		$lines[] = '';
 	}
 	$lines[] = '—';
-	$lines[] = 'Aviso automático del plugin EG Publicación (enricgomez Studio).';
+	$lines[] = 'Aviso automático del plugin EG Studio (enricgomez Studio).';
 
 	if ( eg_pub_send_mail( 'Publicado: ' . get_the_title( $post_id ) . ' – ' . get_bloginfo( 'name' ), implode( "\n", $lines ) ) ) {
 		update_post_meta( $post_id, '_eg_notified', current_time( 'mysql' ) );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Endpoints de las tipologías Elementor y Gestión de la web (se activan en Ajustes → EG Publicación; ver includes/modulos.php):
+ * Endpoints de las tipologías Elementor y Gestión de la web (se activan en Ajustes → EG Studio; ver includes/modulos.php):
  *   POST /wp-json/eg/v1/landing   clona una página maestra de Elementor y sustituye sus marcadores {{clave}}
  *                                 (o crea la página con su propio JSON de Elementor en "elements").
  *   POST /wp-json/eg/v1/redirect  crea una redirección en Rank Math.
@@ -746,7 +746,7 @@ function eg_pub_redirect_redirection( $path, $to, $code ) {
 }
 
 /**
- * Webs sin Rank Math ni Redirection: la redirección la guarda EG Publicación (opción eg_pub_redirects) y la
+ * Webs sin Rank Math ni Redirection: la redirección la guarda EG Studio (opción eg_pub_redirects) y la
  * aplica solo cuando la URL de origen da 404, así nunca tapa una página que exista.
  */
 function eg_pub_redirect_own( $path, $to, $code ) {
@@ -779,7 +779,7 @@ add_action( 'template_redirect', function () {
 		status_header( $code );
 		return;
 	}
-	wp_redirect( $own[ $path ]['to'], $code, 'EG Publicación' ); // phpcs:ignore WordPress.Security.SafeRedirect
+	wp_redirect( $own[ $path ]['to'], $code, 'EG Studio' ); // phpcs:ignore WordPress.Security.SafeRedirect
 	exit;
 }, 1 );
 

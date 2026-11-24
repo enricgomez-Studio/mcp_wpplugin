@@ -9,7 +9,7 @@
  *               resultados se recogen después con results
  *   results     true devuelve (y borra) los perfiles guardados que nadie ha recogido todavía
  *   uninstall   true quita el mu-plugin de perfil y sus opciones
- *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}, "listing_bg": {"size": "large", "listings": [5896]}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
+ *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}, "listing_bg": {"size": "large", "listings": [5896]}, "hero_preload": {"viatge": "featured", "post": "https://…/cabecera.jpg"}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
  *               includes/perfil-ajustes.php); {} solo enseña cuáles están activos. Se puede combinar con urls para
  *               medir el efecto en la misma llamada (los ajustes se guardan antes de medir)
  * La primera llamada instala el mu-plugin `eg-pub-perfil.php` (copia de includes/perfil-mu.php), que no hace nada
@@ -106,6 +106,8 @@ function eg_pub_perf_handle( WP_REST_Request $request ) {
 					'size'     => sanitize_key( (string) ( $on['size'] ?? 'large' ) ),
 					'listings' => array_values( array_filter( array_map( 'intval', (array) $on['listings'] ) ) ),
 				) : false;
+			} elseif ( 'hero_preload' === $fix ) {
+				$fixes[ $fix ] = is_array( $on ) ? eg_pub_hero_preload_clean( $on ) : false;
 			} elseif ( in_array( $fix, EG_PUB_PERF_FIXES, true ) ) {
 				$fixes[ $fix ] = (bool) $on;
 			}

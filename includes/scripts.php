@@ -6,7 +6,8 @@
  * Sin parámetros lista los códigos guardados (clave, posición, activo, páginas, tamaño, fecha, versiones).
  *   key       clave del código (p. ej. "hijiffy"). Con solo key devuelve el código y su historial.
  *   code      HTML tal cual lo da el proveedor (<script>…</script>, <noscript>, <img>…). La versión anterior pasa al historial (10).
- *   position  "head" (por defecto), "body" (justo tras <body>, wp_body_open) o "footer".
+ *   position  "head" (por defecto), "head_top" (al principio del <head>, antes de las hojas de estilo; para
+ *             precargas de la imagen principal), "body" (justo tras <body>, wp_body_open) o "footer".
  *   enabled   true/false. Un código nuevo nace apagado salvo que se diga lo contrario.
  *   pages     [ids] solo en esas páginas (con WPML, también en sus traducciones); [] = en toda la web.
  *   label     descripción corta.
@@ -124,8 +125,8 @@ function eg_pub_scripts_handle( WP_REST_Request $r ) {
 	}
 	if ( null !== $r->get_param( 'position' ) ) {
 		$pos = (string) $r->get_param( 'position' );
-		if ( ! in_array( $pos, array( 'head', 'body', 'footer' ), true ) ) {
-			return new WP_Error( 'eg_scripts_position', 'position debe ser head, body o footer.', array( 'status' => 400 ) );
+		if ( ! in_array( $pos, array( 'head_top', 'head', 'body', 'footer' ), true ) ) {
+			return new WP_Error( 'eg_scripts_position', 'position debe ser head_top, head, body o footer.', array( 'status' => 400 ) );
 		}
 		$item['position'] = $pos;
 		$changed[]        = 'position';
@@ -188,6 +189,7 @@ function eg_pub_scripts_print( $position ) {
 		}
 	}
 }
+add_action( 'wp_head', function () { eg_pub_scripts_print( 'head_top' ); }, 1 );
 add_action( 'wp_head', function () { eg_pub_scripts_print( 'head' ); }, 110 );
 add_action( 'wp_body_open', function () { eg_pub_scripts_print( 'body' ); }, 5 );
 add_action( 'wp_footer', function () { eg_pub_scripts_print( 'footer' ); }, 100 );

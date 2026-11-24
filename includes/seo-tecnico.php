@@ -26,6 +26,10 @@
  *             de medición. "" o null la quita. El estado devuelve la ID guardada.
  *   hide_generator true/false: deja de publicar la versión de WordPress (meta generator, feeds y ?ver= de los
  *             scripts y estilos del núcleo) y la meta generator de WooCommerce.
+ *   llms_static true/false: guarda el llms.txt de Rank Math como fichero llms.txt en la raíz de la web, para que el
+ *             servidor lo sirva al instante sin cargar WordPress (el virtual tarda segundos y PageSpeed da timeout).
+ *             Se rehace cada hora y unos minutos después de guardar una entrada. false borra el fichero (solo si
+ *             es el nuestro). El estado devuelve llms_static con la fecha y el tamaño del fichero.
  * Como /seo y /rocket, los cambios solo se previsualizan; apply:true guarda y vacía la caché de WP Rocket.
  */
 
@@ -38,6 +42,8 @@ const EG_PUB_OPTION_ROBOTS   = 'eg_pub_robots_extra';
 const EG_PUB_OPTION_AI_CAT   = 'eg_pub_ai_catalog';
 const EG_PUB_OPTION_GA4      = 'eg_pub_ga4_id';
 const EG_PUB_OPTION_NO_GEN   = 'eg_pub_hide_generator';
+const EG_PUB_OPTION_LLMS     = 'eg_pub_llms_static';
+const EG_PUB_LLMS_HOOK       = 'eg_pub_llms_static_refresh';
 
 add_filter( 'eg_pub_modules', function ( $modules ) {
 	$modules['seo-tecnico'] = array( 'type' => 'gestion', 'routes' => array( 'seo-tech' ) );
@@ -54,6 +60,77 @@ add_action( 'rest_api_init', function () {
 		'permission_callback' => eg_pub_module_permission( 'manage_options' ),
 	) );
 } );
+
+/**
+ * llms.txt estático: copia en ABSPATH/llms.txt el llms.txt virtual de Rank Math (query var llms_txt), que se pide
+ * con ?llms_txt=1 para no leer el propio fichero. Solo escribe si la respuesta es Markdown con un encabezado.
+ * Devuelve array( 'ok' => bool, 'bytes' => int, 'error' => string ).
+ */
+function eg_pub_llms_static_refresh() {
+	if ( ! get_option( EG_PUB_OPTION_LLMS ) ) {
+		return array( 'ok' => false, 'bytes' => 0, 'error' => 'desactivado' );
+	}
+	$res = wp_remote_get( add_query_arg( 'llms_txt', '1', home_url( '/' ) ), array( 'timeout' => 30, 'redirection' => 2 ) );
+	if ( is_wp_error( $res ) ) {
+		return array( 'ok' => false, 'bytes' => 0, 'error' => $res->get_error_message() );
+	}
+	$body = (string) wp_remote_retrieve_body( $res );
+	$code = (int) wp_remote_retrieve_response_code( $res );
+	if ( 200 !== $code || strlen( $body ) < 50 || false !== stripos( $body, '<html' ) || ! preg_match( '/^# \S/m', $body ) ) {
+		return array( 'ok' => false, 'bytes' => strlen( $body ), 'error' => 'respuesta no válida (' . $code . ')' );
+	}
+	$file = ABSPATH . 'llms.txt';
+	if ( file_exists( $file ) && ! get_option( EG_PUB_OPTION_LLMS . '_md5' ) ) {
+		return array( 'ok' => false, 'bytes' => 0, 'error' => 'ya hay un llms.txt que no es nuestro' );
+	}
+	$tmp = $file . '.eg-tmp';
+	if ( false === file_put_contents( $tmp, $body ) || ! rename( $tmp, $file ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions
+		@unlink( $tmp ); // phpcs:ignore
+		return array( 'ok' => false, 'bytes' => 0, 'error' => 'no se puede escribir ' . $file );
+	}
+	update_option( EG_PUB_OPTION_LLMS . '_md5', md5( $body ), false );
+	return array( 'ok' => true, 'bytes' => strlen( $body ), 'error' => '' );
+}
+add_action( EG_PUB_LLMS_HOOK, 'eg_pub_llms_static_refresh' );
+
+/** Borra el fichero solo si lo escribimos nosotros (mismo md5 que el guardado). */
+function eg_pub_llms_static_remove() {
+	$file = ABSPATH . 'llms.txt';
+	$md5  = (string) get_option( EG_PUB_OPTION_LLMS . '_md5', '' );
+	if ( $md5 && file_exists( $file ) && md5_file( $file ) === $md5 ) {
+		@unlink( $file ); // phpcs:ignore
+	}
+	delete_option( EG_PUB_OPTION_LLMS . '_md5' );
+	wp_clear_scheduled_hook( EG_PUB_LLMS_HOOK );
+}
+
+if ( get_option( EG_PUB_OPTION_LLMS ) ) {
+	add_action( 'init', function () {
+		if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK ) ) {
+			wp_schedule_event( time() + 60, 'hourly', EG_PUB_LLMS_HOOK );
+		}
+	} );
+	add_action( 'save_post', function ( $post_id, $post ) {
+		if ( wp_is_post_revision( $post_id ) || 'publish' !== $post->post_status ) {
+			return;
+		}
+		if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK, array( 'save' ) ) ) {
+			wp_schedule_single_event( time() + 180, EG_PUB_LLMS_HOOK, array( 'save' ) );
+		}
+	}, 20, 2 );
+}
+
+function eg_pub_llms_static_state() {
+	$file = ABSPATH . 'llms.txt';
+	return array(
+		'enabled' => (bool) get_option( EG_PUB_OPTION_LLMS, false ),
+		'file'    => file_exists( $file ),
+		'ours'    => file_exists( $file ) && md5_file( $file ) === (string) get_option( EG_PUB_OPTION_LLMS . '_md5', '' ),
+		'updated' => file_exists( $file ) ? gmdate( 'Y-m-d H:i:s', (int) filemtime( $file ) ) : null,
+		'bytes'   => file_exists( $file ) ? (int) filesize( $file ) : 0,
+		'next'    => wp_next_scheduled( EG_PUB_LLMS_HOOK ) ? gmdate( 'Y-m-d H:i:s', (int) wp_next_scheduled( EG_PUB_LLMS_HOOK ) ) : null,
+	);
+}
 
 /** Limpia en profundidad los datos del negocio: textos sin HTML y URLs válidas. */
 function eg_pub_seo_tech_clean( $value, $key = '' ) {
@@ -408,6 +485,25 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 			}
 		}
 	}
+	if ( array_key_exists( 'llms_static', $p ) ) {
+		$before = (bool) get_option( EG_PUB_OPTION_LLMS, false );
+		$after  = rest_sanitize_boolean( $p['llms_static'] );
+		if ( $before !== $after ) {
+			$out['changes']['llms_static'] = array( 'before' => $before, 'after' => $after );
+		}
+		if ( $apply ) {
+			if ( $after ) {
+				update_option( EG_PUB_OPTION_LLMS, 1, true );
+				$out['llms_static'] = eg_pub_llms_static_refresh();
+				if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK ) ) {
+					wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', EG_PUB_LLMS_HOOK );
+				}
+			} else {
+				delete_option( EG_PUB_OPTION_LLMS );
+				eg_pub_llms_static_remove();
+			}
+		}
+	}
 	if ( array_key_exists( 'rankmath_modules', $p ) ) {
 		if ( ! class_exists( '\\RankMath\\Helper' ) ) {
 			return eg_pub_error( 'eg_rankmath', 'Rank Math no está activo en esta web.' );
@@ -491,6 +587,7 @@ function eg_pub_seo_tech_handle( WP_REST_Request $r ) {
 		'wpml_hreflang'   => eg_pub_seo_tech_wpml_hreflang(),
 		'ga4'             => (string) get_option( EG_PUB_OPTION_GA4, '' ),
 		'hide_generator'  => (bool) get_option( EG_PUB_OPTION_NO_GEN, false ),
+		'llms_static'     => eg_pub_llms_static_state(),
 		'yoast'           => defined( 'WPSEO_VERSION' ) ? WPSEO_VERSION : null,
 		'yoast_company'   => defined( 'WPSEO_VERSION' ) ? ( (array) get_option( 'wpseo_titles', array() ) )['company_or_person'] ?? null : null,
 	);

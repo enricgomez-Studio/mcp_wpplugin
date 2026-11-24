@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.128.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/perf fixes listing_bg` (`true` = tamaño «large», o el nombre de otro tamaño, p. ej. `"medium_large"`): en las fichas de los listados de JetEngine, las imágenes que Elementor pide a tamaño completo por etiqueta dinámica (fondo con la imagen destacada o un campo de imagen) salen a ese tamaño. Cada tarjeta dejaba de descargar la foto original (hasta 2560 px, 600-900 KB en WebP) para verse a 400 px. Solo actúa dentro de los listados; cabeceras y resto de la web igual. Al cambiarlo vacía la caché de Elementor y de WP Rocket. El estado devuelve `listing_bg.size`.
+- Gestión de la web (`perf`). Webs: clubdelviatger.cat (listados de viajes: /viatges/ cargaba 38 MB de fotos). Sirve en cualquier web con listados de JetEngine con fondo dinámico.
+
 ## 2.127.0 · 23/11/2026 · PR (Claude, a petición de Enric)
 
 - `/product shop_settings` admite `exclude_states` (p. ej. `["ES:PM","ES:GC","ES:TF","ES:CE","ES:ML"]`: quita esas provincias de las direcciones de facturación y envío, para vender solo a la península; `[]` las vuelve a poner) y `order_emails` (destinatarios de los avisos de pedido nuevo, cancelado y fallido). La respuesta trae `shipping_zones` (zonas, regiones y métodos de envío, solo lectura).

@@ -23,13 +23,18 @@
  *                  acepta WebP). Al activarlo se convierten las que faltan y queda una tarea diaria de WP-Cron para las
  *                  nuevas. No toca los originales; si el WebP sale más grande que el original no se guarda. Con `false`
  *                  se quita la tarea diaria (los WebP ya creados se quedan).
+ *   listing_bg     Fondos de las fichas de los listados de JetEngine con la imagen destacada (o un campo de imagen) por
+ *                  etiqueta dinámica: Elementor siempre pide el tamaño completo («full»), y cada tarjeta descarga la foto
+ *                  original (hasta 2560 px) aunque se vea a 400 px. Con `true` (tamaño «large») o el nombre de un tamaño
+ *                  («medium_large», «1536x1536»…) esas imágenes salen a ese tamaño, solo dentro de los listados de
+ *                  JetEngine; las cabeceras y el resto de la web siguen igual. `false` lo quita.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_PERF_FIXES = array( 'jet_validator', 'cdn_fonts', 'img_sizes', 'thumbs_webp' );
+const EG_PUB_PERF_FIXES = array( 'jet_validator', 'cdn_fonts', 'img_sizes', 'thumbs_webp', 'listing_bg' );
 
 final class EG_Pub_Jet_Validator_Cache {
 	private static $controls = array();
@@ -131,6 +136,7 @@ function eg_pub_perf_fixes_state() {
 	$state['jet_validator']['active'] = EG_Pub_Jet_Validator_Cache::$active;
 	$state['cdn_fonts']['cdn']        = eg_pub_rocket_cdn_base();
 	$state['img_sizes']['sizes']      = is_array( $fixes['img_sizes'] ?? null ) ? $fixes['img_sizes'] : array();
+	$state['listing_bg']['size']      = eg_pub_listing_bg_size( $fixes['listing_bg'] ?? '' );
 	$state['thumbs_webp']['next_run'] = wp_next_scheduled( 'eg_pub_thumbs_webp' ) ? gmdate( 'Y-m-d H:i', wp_next_scheduled( 'eg_pub_thumbs_webp' ) ) : null;
 	if ( defined( 'JET_ELEMENTS_VERSION' ) ) {
 		$state['jet_validator']['jet_elements'] = JET_ELEMENTS_VERSION;
@@ -354,8 +360,50 @@ function eg_pub_thumbs_webp_schedule( $on ) {
 	}
 }
 
+/** Tamaño de imagen del ajuste listing_bg ('' si está apagado o el tamaño no existe en esta web). */
+function eg_pub_listing_bg_size( $value ) {
+	if ( empty( $value ) ) {
+		return '';
+	}
+	$size = is_string( $value ) ? sanitize_key( $value ) : 'large';
+	return in_array( $size, get_intermediate_image_sizes(), true ) ? $size : '';
+}
+
+/**
+ * Filtro de wp_get_attachment_image_src: cuando se pide el tamaño completo mientras JetEngine pinta una ficha de
+ * listado (su CSS dinámico o su contenido), devuelve el tamaño del ajuste. Fuera de los listados no cambia nada.
+ */
+function eg_pub_listing_bg_src( $image, $attachment_id, $size, $icon ) {
+	static $busy = false;
+	if ( $busy || 'full' !== $size || ! is_array( $image ) || is_admin() || wp_doing_cron() ) {
+		return $image;
+	}
+	$want = eg_pub_listing_bg_size( eg_pub_perf_fixes()['listing_bg'] ?? '' );
+	if ( '' === $want ) {
+		return $image;
+	}
+	$in_listing = false;
+	foreach ( debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 40 ) as $frame ) {
+		$fn = $frame['function'] ?? '';
+		if ( 'add_listing_item_dynamic_css' === $fn || 'get_listing_content_cb' === $fn || 'get_listing_item' === $fn ) {
+			$in_listing = true;
+			break;
+		}
+	}
+	if ( ! $in_listing ) {
+		return $image;
+	}
+	$busy  = true;
+	$small = wp_get_attachment_image_src( $attachment_id, $want, $icon );
+	$busy  = false;
+	return ( is_array( $small ) && ! empty( $small[0] ) ) ? $small : $image;
+}
+
 add_action( 'plugins_loaded', function () {
 	$fixes = eg_pub_perf_fixes();
+	if ( ! empty( $fixes['listing_bg'] ) ) {
+		add_filter( 'wp_get_attachment_image_src', 'eg_pub_listing_bg_src', 99, 4 );
+	}
 	if ( ! empty( $fixes['img_sizes'] ) && is_array( $fixes['img_sizes'] ) ) {
 		$map = $fixes['img_sizes'];
 		add_filter( 'wp_calculate_image_sizes', function ( $sizes, $size, $src, $meta, $attachment_id ) use ( $map ) {

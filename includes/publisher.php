@@ -151,7 +151,7 @@ function eg_pub_settings_page() {
 					<th>Servicios para el cliente</th>
 					<td>
 						<?php if ( function_exists( 'eg_pub_ai_service' ) ) : $eg_pub_ai = eg_pub_ai_service(); ?>
-							<strong>Asistente IA</strong>: el cliente gestiona el blog o los productos desde su Claude o ChatGPT.
+							<strong>Asistente IA</strong>: el cliente gestiona el blog o los productos desde su propio asistente.
 							<?php if ( $eg_pub_ai['enabled'] ) : ?>
 								Activo (<?php echo esc_html( implode( ', ', $eg_pub_ai['scopes'] ) ?: 'sin ámbitos' ); ?>, <?php echo $eg_pub_ai['publish'] ? 'puede publicar' : 'solo borradores'; ?>), <?php echo (int) count( eg_pub_ai_connections() ); ?> conexiones. <a href="<?php echo esc_url( admin_url( 'admin.php?page=eg-asistente' ) ); ?>">Ver conexiones</a>
 							<?php else : ?>

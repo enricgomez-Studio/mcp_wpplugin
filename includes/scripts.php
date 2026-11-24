@@ -13,6 +13,9 @@
  *   label     descripción corta.
  *   rollback  true o número de versiones atrás.  delete  true: borra el código y su historial.
  * Solo previsualiza; guarda con apply:true. Al guardar vacía la caché de WP Rocket.
+ * Custom Code de Elementor Pro (elementor_snippet), para pasar sus códigos aquí o detrás del aviso de cookies:
+ *   elementor: true                       lista los códigos (id, título, estado, posición, inicio del código).
+ *   elementor_status: {"<id>": "draft"}   los apaga ("draft") o enciende ("publish"). Con apply:true; vacía WP Rocket.
  * Prueba sin publicar: ?eg_js=<clave> pinta ese código aunque esté apagado; ?eg_js=off quita todos en esa visita.
  */
 
@@ -62,6 +65,10 @@ function eg_pub_scripts_handle( WP_REST_Request $r ) {
 	$all   = eg_pub_scripts_all();
 	$key   = sanitize_key( (string) $r->get_param( 'key' ) );
 	$apply = (bool) $r->get_param( 'apply' );
+
+	if ( $r->get_param( 'elementor' ) || $r->get_param( 'elementor_status' ) ) {
+		return eg_pub_scripts_elementor( (array) $r->get_param( 'elementor_status' ), $apply );
+	}
 
 	if ( '' === $key ) {
 		$list = array();
@@ -193,3 +200,38 @@ add_action( 'wp_head', function () { eg_pub_scripts_print( 'head_top' ); }, 1 );
 add_action( 'wp_head', function () { eg_pub_scripts_print( 'head' ); }, 110 );
 add_action( 'wp_body_open', function () { eg_pub_scripts_print( 'body' ); }, 5 );
 add_action( 'wp_footer', function () { eg_pub_scripts_print( 'footer' ); }, 100 );
+
+/** Custom Code de Elementor Pro: listar y apagar/encender (los códigos siguen guardados, nada se borra). */
+function eg_pub_scripts_elementor( $set, $apply ) {
+	$changed = array();
+	foreach ( $set as $id => $status ) {
+		$id     = (int) $id;
+		$status = 'publish' === $status ? 'publish' : 'draft';
+		$post   = get_post( $id );
+		if ( ! $post || 'elementor_snippet' !== $post->post_type ) {
+			return new WP_Error( 'eg_scripts_snippet', 'No es un código de Elementor: ' . $id, array( 'status' => 400 ) );
+		}
+		if ( $apply && $post->post_status !== $status ) {
+			wp_update_post( array( 'ID' => $id, 'post_status' => $status ) );
+		}
+		$changed[ $id ] = $status;
+	}
+	if ( $changed && $apply ) {
+		delete_transient( 'elementor_pro_custom_code_snippets' );
+		if ( function_exists( 'rocket_clean_domain' ) ) {
+			rocket_clean_domain();
+		}
+	}
+	$list = array();
+	foreach ( get_posts( array( 'post_type' => 'elementor_snippet', 'post_status' => 'any', 'numberposts' => -1, 'suppress_filters' => true ) ) as $p ) {
+		$list[] = array(
+			'id'       => $p->ID,
+			'title'    => $p->post_title,
+			'status'   => $p->post_status,
+			'location' => (string) get_post_meta( $p->ID, '_elementor_location', true ),
+			'priority' => (string) get_post_meta( $p->ID, '_elementor_priority', true ),
+			'code'     => mb_substr( trim( (string) ( get_post_meta( $p->ID, '_elementor_code', true ) ?: $p->post_content ) ), 0, 400 ),
+		);
+	}
+	return array( 'applied' => $apply && $changed, 'changed' => $changed, 'elementor_snippets' => $list );
+}

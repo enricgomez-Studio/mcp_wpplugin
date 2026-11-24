@@ -9,7 +9,7 @@
  *               resultados se recogen después con results
  *   results     true devuelve (y borra) los perfiles guardados que nadie ha recogido todavía
  *   uninstall   true quita el mu-plugin de perfil y sus opciones
- *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
+ *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}, "listing_bg": "large"}  activa (o con false quita) ajustes de rendimiento del servidor (ver
  *               includes/perfil-ajustes.php); {} solo enseña cuáles están activos. Se puede combinar con urls para
  *               medir el efecto en la misma llamada (los ajustes se guardan antes de medir)
  * La primera llamada instala el mu-plugin `eg-pub-perfil.php` (copia de includes/perfil-mu.php), que no hace nada
@@ -101,6 +101,8 @@ function eg_pub_perf_handle( WP_REST_Request $request ) {
 		foreach ( (array) $p['fixes'] as $fix => $on ) {
 			if ( 'img_sizes' === $fix ) {
 				$fixes[ $fix ] = is_array( $on ) ? eg_pub_img_sizes_clean( $on ) : array();
+			} elseif ( 'listing_bg' === $fix ) {
+				$fixes[ $fix ] = ( is_string( $on ) && '' !== $on ) ? sanitize_key( $on ) : (bool) $on;
 			} elseif ( in_array( $fix, EG_PUB_PERF_FIXES, true ) ) {
 				$fixes[ $fix ] = (bool) $on;
 			}
@@ -120,6 +122,18 @@ function eg_pub_perf_handle( WP_REST_Request $request ) {
 		}
 		if ( array_key_exists( 'img_sizes', (array) $p['fixes'] ) && function_exists( 'rocket_clean_domain' ) ) {
 			rocket_clean_domain(); // Las páginas en caché llevan el `sizes` anterior.
+		}
+		if ( array_key_exists( 'listing_bg', (array) $p['fixes'] ) ) {
+			if ( ! empty( $fixes['listing_bg'] ) && '' === eg_pub_listing_bg_size( $fixes['listing_bg'] ) ) {
+				$fixes_state['listing_bg']['error'] = 'Ese tamaño de imagen no existe en esta web: ' . implode( ', ', get_intermediate_image_sizes() );
+			}
+			// La caché de elementos de Elementor y las páginas en caché llevan las URL anteriores.
+			if ( class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
+				\Elementor\Plugin::$instance->files_manager->clear_cache();
+			}
+			if ( function_exists( 'rocket_clean_domain' ) ) {
+				rocket_clean_domain();
+			}
 		}
 		if ( empty( $p['urls'] ) && empty( $p['admin_urls'] ) ) {
 			return new WP_REST_Response( array( 'ok' => true, 'fixes' => $fixes_state ), 200 );

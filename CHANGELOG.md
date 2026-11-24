@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.140.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/perf fixes hero_preload: {"<tipo>": "featured" | "<URL>"}`: en las fichas de ese tipo de contenido precarga con prioridad alta la foto de cabecera que Elementor pinta como fondo (es el LCP y el navegador no la descubre hasta tener el CSS). `featured` = imagen destacada a tamaño completo. No cambia la imagen ni su calidad. `false` lo quita.
+- Gestión de la web (`perf`). Webs: clubdelviatger.cat (fichas /viatge/ y entradas del blog: LCP móvil 5-6,5 s).
+
 ## 2.139.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - El plugin pasa a la carpeta y el archivo **`eg-studio/eg-studio.php`** (antes `eg-publicacion/eg-publicacion.php`). Cada web se pasa sola tras actualizar (nuevo `includes/migracion.php`): al final de la primera petición con la versión nueva renombra la carpeta, cambia el plugin activo (también en multisitio y en la lista de actualizaciones automáticas) y borra el cargador antiguo. Si ya existe una `eg-studio/` subida a mano, se queda con la versión más nueva y borra la otra. Si falla (permisos), sigue funcionando desde la carpeta antigua, avisa en el escritorio y lo reintenta cada hora. `EG_PUB_NO_MIGRATE` lo impide.
@@ -29,11 +34,6 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - `llms_static` (`/seo-tech`): el `llms.txt` estático sigue siendo el que genera Rank Math, pero ahora se rehace también al guardar los ajustes de Rank Math (opciones de llms.txt y títulos), al cambiar el nombre o la descripción de la web, al crear, editar o borrar categorías y términos, y al retirar una entrada publicada (borrador, privada, papelera). Antes solo se rehacía cada hora y al guardar una entrada publicada. Los cambios seguidos se agrupan en una sola pasada a los dos minutos.
 - Gestión de la web (`seo-tecnico`). Webs: hotelmiamicalella.com (Rank Math tarda 2,3 s en servir el llms.txt por WordPress y PageSpeed solo espera 2 s; el fichero se sirve en 0,3 s).
-
-## 2.137.0 · 24/11/2026 · PR (Claude, a petición de Enric)
-
-- `/perf fixes hero_preload: {"<tipo>": "featured" | "<URL>"}`: en las fichas de ese tipo de contenido precarga con prioridad alta la foto de cabecera que Elementor pinta como fondo (es el LCP y el navegador no la descubre hasta tener el CSS). `featured` = imagen destacada a tamaño completo. No cambia la imagen ni su calidad. `false` lo quita.
-- Gestión de la web (`perf`). Webs: clubdelviatger.cat (fichas /viatge/ y entradas del blog: LCP móvil 5-6,5 s).
 
 ## 2.136.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 

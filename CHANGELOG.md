@@ -10,6 +10,12 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.144.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/seo-tech ga4_options: {"purchase": true, "exclude_logged": true}`: con la etiqueta de GA4 de EG Studio, manda el evento `purchase` de WooCommerce una sola vez por pedido en la página de pedido recibido (número, importe, IVA, envío y productos) y deja fuera a los usuarios conectados. Es lo que hacía Site Kit, para poder quitarlo.
+- `/plugins remove` también quita plugins que EG Studio ya sustituye (filtro `eg_pub_replaceable_plugins`): `google-site-kit` (solo si hay GA4 en `/seo-tech ga4`) y `wp-consent-api` (solo sin Site Kit).
+- Gestión de la web (`seo-tech`, `plugins`). Webs: clubdelviatger.cat.
+
 ## 2.143.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - Descripción del plugin en la lista de plugins de WordPress neutra, sin detalles técnicos (ni asistentes de IA, ni rutas, ni Make, ni clave, ni GitHub): «Gestión, mantenimiento y optimización de las webs de enricgomez Studio.» La del cargador antiguo, «Archivo de compatibilidad de EG Studio. No lo desactives.» En Ajustes → EG Studio, el Asistente IA ya no nombra Claude ni ChatGPT.

@@ -10,6 +10,14 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.141.0 · 24/11/2026 · PR (Claude)
+
+- **Paso a `eg-studio/` en pausa por defecto.** En clubdelviatger.cat (Plesk ajeno) el plugin desapareció tras actualizar de la 2.136.0 a la 2.140.0 y hubo que reinstalarlo a mano; en local el mismo camino funciona y la causa aún no se conoce. Hasta entenderlo, las webs siguen funcionando desde su carpeta antigua con el cargador `eg-publicacion.php`. Se activa por web con `POST /update {"migrate": true}` (o `define( 'EG_PUB_MIGRATE', true )`).
+- Corrige un fallo latente: una web que aún funciona con el cargador antiguo descargaba `eg-studio.zip` (sin cargador) al actualizarse, lo que habría borrado el archivo activo y desactivado el plugin. Ahora descarga `eg-publicacion.zip`.
+- Bloqueo del paso atómico (`add_option` no lo es con dos peticiones a la vez).
+- `/update` (también con `dry_run`) devuelve `folder`: archivo activo, copias del plugin en `wp-content/plugins`, si el paso está activo y el registro del último paso.
+- Todas las webs.
+
 ## 2.140.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/perf fixes hero_preload: {"<tipo>": "featured" | "<URL>"}`: en las fichas de ese tipo de contenido precarga con prioridad alta la foto de cabecera que Elementor pinta como fondo (es el LCP y el navegador no la descubre hasta tener el CSS). `featured` = imagen destacada a tamaño completo. No cambia la imagen ni su calidad. `false` lo quita.

@@ -8,6 +8,9 @@
  *   install: "eg-cookies"   instala la última release (o la reinstala encima si ya está) y la activa.
  *   activate: false         con install, lo deja instalado pero sin activar.
  *   deactivate: "eg-cookies" lo desactiva (no lo borra).
+ *   remove: "gdpr-cookie-compliance"  desactiva y BORRA un plugin de cookies de terceros (lista cerrada,
+ *                           filtro eg_pub_removable_cookie_plugins), solo si EG Cookies está activo y encendido:
+ *                           EG Cookies debe ser el único aviso de la web. Sin apply:true solo previsualiza.
  * Solo se pueden instalar los plugins de la lista (filtro eg_pub_own_plugins), siempre desde sus releases de GitHub.
  */
 
@@ -59,6 +62,10 @@ function eg_pub_plugin_status( $slug, $p, $latest = true ) {
 
 function eg_pub_plugins_handle( WP_REST_Request $r ) {
 	$list = eg_pub_own_plugins();
+
+	if ( ! empty( $r['remove'] ) ) {
+		return eg_pub_plugins_remove_cookie_plugin( sanitize_key( (string) $r['remove'] ), ! empty( $r['apply'] ) );
+	}
 
 	if ( ! empty( $r['deactivate'] ) ) {
 		$slug = sanitize_key( (string) $r['deactivate'] );
@@ -118,4 +125,56 @@ function eg_pub_plugins_handle( WP_REST_Request $r ) {
 		'activated' => $activated,
 		'message'   => ( $before['installed'] ? 'Reinstalado ' : 'Instalado ' ) . $p['name'] . '.',
 	) );
+}
+
+/** Plugins de cookies de terceros que se pueden quitar al pasar a EG Cookies (carpeta => nombre). */
+function eg_pub_removable_cookie_plugins() {
+	return apply_filters( 'eg_pub_removable_cookie_plugins', array(
+		'gdpr-cookie-compliance'      => 'GDPR Cookie Compliance (Moove)',
+		'complianz-gdpr'              => 'Complianz',
+		'cookie-law-info'             => 'CookieYes',
+		'cookie-notice'               => 'Cookie Notice & Compliance',
+		'cookiebot'                   => 'Cookiebot',
+		'real-cookie-banner'          => 'Real Cookie Banner',
+		'borlabs-cookie'              => 'Borlabs Cookie',
+		'uk-cookie-consent'           => 'Termly / UK Cookie Consent',
+		'cookie-notice-and-consent-banner' => 'Cookie Notice and Consent Banner',
+		'pixelyoursite'               => 'PixelYourSite',
+	) );
+}
+
+function eg_pub_plugins_remove_cookie_plugin( $dir, $apply ) {
+	$allowed = eg_pub_removable_cookie_plugins();
+	if ( ! isset( $allowed[ $dir ] ) ) {
+		return eg_pub_error( 'eg_plugin', 'Solo se quitan plugins de cookies conocidos: ' . implode( ', ', array_keys( $allowed ) ) . '.', 400 );
+	}
+	if ( ! defined( 'EG_COOKIES_VERSION' ) || ! function_exists( 'eg_cookies_enabled' ) || ! eg_cookies_enabled() ) {
+		return eg_pub_error( 'eg_plugin', 'Primero EG Cookies activo y encendido: la web no puede quedarse sin aviso.', 409 );
+	}
+	if ( ! current_user_can( 'delete_plugins' ) || ! current_user_can( 'activate_plugins' ) ) {
+		return eg_pub_error( 'eg_cap', 'El usuario del plugin no puede borrar plugins.', 403 );
+	}
+	require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	$files = array();
+	foreach ( array_keys( get_plugins() ) as $file ) {
+		if ( 0 === strpos( $file, $dir . '/' ) ) {
+			$files[] = $file;
+		}
+	}
+	if ( ! $files ) {
+		return new WP_REST_Response( array( 'ok' => true, 'removed' => false, 'message' => 'No está instalado.' ) );
+	}
+	if ( ! $apply ) {
+		return new WP_REST_Response( array( 'ok' => true, 'dry_run' => true, 'would_remove' => $files ) );
+	}
+	deactivate_plugins( $files );
+	$del = delete_plugins( $files );
+	if ( is_wp_error( $del ) || ! $del ) {
+		return eg_pub_error( 'eg_plugin', 'Desactivado pero no borrado: ' . ( is_wp_error( $del ) ? $del->get_error_message() : 'error al borrar.' ), 500 );
+	}
+	if ( function_exists( 'rocket_clean_domain' ) ) {
+		rocket_clean_domain();
+	}
+	return new WP_REST_Response( array( 'ok' => true, 'removed' => $files, 'name' => $allowed[ $dir ] ) );
 }

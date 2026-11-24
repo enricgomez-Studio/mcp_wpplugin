@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.136.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/plugins remove: "<carpeta>"` con `apply: true` desactiva y borra un plugin de cookies de terceros de una lista cerrada (Moove GDPR Cookie Compliance, Complianz, CookieYes, Cookie Notice, Cookiebot, Real Cookie Banner, Borlabs, Termly, PixelYourSite; filtro `eg_pub_removable_cookie_plugins`). Solo si EG Cookies está activo y encendido, para no dejar la web sin aviso. Regla de Enric: al pasar a EG Cookies se borra el plugin anterior. Sirve en webs de Plesk ajeno sin WP-CLI.
+- Siempre activo (`plugins`). Webs: clubdelviatger.cat (Moove).
+
 ## 2.135.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/scripts elementor: true` lista los códigos de Custom Code de Elementor Pro (id, título, estado, posición, inicio del código); `elementor_status: {"<id>": "draft"|"publish"}` con `apply: true` los apaga o enciende y vacía WP Rocket. Sirve para pasar un píxel puesto en Elementor a `/scripts` detrás del aviso de cookies (`type="text/plain" data-eg-category="marketing"`).

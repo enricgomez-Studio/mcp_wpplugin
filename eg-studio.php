@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       EG Studio
  * Description:       Gestión, mantenimiento, optimización y contenidos de las webs de enricgomez Studio. Por bloques: Blog, Elementor, WooCommerce, Gestión de la web y Servicios para el cliente (Asistente IA para gestionar el blog y los productos desde Claude o ChatGPT). Endpoints /wp-json/eg/v1/ para los escenarios de Make, con la clave de Ajustes → EG Studio. Se actualiza solo desde GitHub.
- * Version:           2.141.0
+ * Version:           2.142.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            enricgomez Studio
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_VERSION = '2.141.0';
+const EG_PUB_VERSION = '2.142.0';
 const EG_PUB_REPO    = 'enricgomez-Studio/mcp_wpplugin';
 const EG_PUB_FOLDER  = 'eg-studio';
 const EG_PUB_MAIN    = 'eg-studio/eg-studio.php';

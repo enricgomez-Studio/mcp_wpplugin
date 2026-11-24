@@ -9,6 +9,10 @@
  *               resultados se recogen después con results
  *   results     true devuelve (y borra) los perfiles guardados que nadie ha recogido todavía
  *   uninstall   true quita el mu-plugin de perfil y sus opciones
+ *   webp_recompress {"ids": [adjuntos] | "post_type": "viatges", "quality": 80, "min_saving": 10, "apply": true, "restore": false, "limit": 50}
+ *               recomprime a la misma resolución el .webp de tamaño completo que Imagify deja junto a cada imagen
+ *               (foto.png.webp), desde la imagen de la mediateca. Solo lo cambia si ahorra al menos min_saving %. Guarda
+ *               el .webp anterior en uploads/eg-webp-backup/ (restore: true lo devuelve). Sin apply solo calcula.
  *   fixes       {"jet_validator": true, "cdn_fonts": true, "thumbs_webp": true, "img_sizes": {"642": "(max-width: 767px) 62vw, 768px"}, "listing_bg": {"size": "large", "listings": [5896]}, "hero_preload": {"viatge": "featured", "post": "https://…/cabecera.jpg"}}  activa (o con false quita) ajustes de rendimiento del servidor (ver
  *               includes/perfil-ajustes.php); {} solo enseña cuáles están activos. Se puede combinar con urls para
  *               medir el efecto en la misma llamada (los ajustes se guardan antes de medir)
@@ -96,6 +100,9 @@ function eg_pub_perf_top( $r ) {
 function eg_pub_perf_handle( WP_REST_Request $request ) {
 	$p = (array) $request->get_json_params();
 	$fixes_state = null;
+	if ( ! empty( $p['webp_recompress'] ) && is_array( $p['webp_recompress'] ) ) {
+		return new WP_REST_Response( eg_pub_webp_recompress( $p['webp_recompress'] ), 200 );
+	}
 	if ( array_key_exists( 'fixes', $p ) ) {
 		$fixes = eg_pub_perf_fixes();
 		foreach ( (array) $p['fixes'] as $fix => $on ) {

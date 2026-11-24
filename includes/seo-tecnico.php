@@ -31,8 +31,9 @@
  *             scripts y estilos del núcleo) y la meta generator de WooCommerce.
  *   llms_static true/false: guarda el llms.txt de Rank Math como fichero llms.txt en la raíz de la web, para que el
  *             servidor lo sirva al instante sin cargar WordPress (el virtual tarda segundos y PageSpeed da timeout).
- *             Se rehace cada hora y unos minutos después de guardar una entrada. false borra el fichero (solo si
- *             es el nuestro). El estado devuelve llms_static con la fecha y el tamaño del fichero.
+ *             El contenido es siempre el de Rank Math: se rehace cada hora y dos minutos después de publicar,
+ *             actualizar o retirar una entrada, cambiar categorías o guardar los ajustes de Rank Math (llms.txt,
+ *             títulos) o el nombre de la web. false borra el fichero (solo si es el nuestro). El estado devuelve llms_static con la fecha y el tamaño del fichero.
  * Como /seo y /rocket, los cambios solo se previsualizan; apply:true guarda y vacía la caché de WP Rocket.
  */
 
@@ -107,20 +108,34 @@ function eg_pub_llms_static_remove() {
 	wp_clear_scheduled_hook( EG_PUB_LLMS_HOOK );
 }
 
+/** Rehace el fichero unos minutos después de un cambio (agrupa varios cambios seguidos en una sola pasada). */
+function eg_pub_llms_static_schedule_soon() {
+	if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK, array( 'save' ) ) ) {
+		wp_schedule_single_event( time() + 120, EG_PUB_LLMS_HOOK, array( 'save' ) );
+	}
+}
+
 if ( get_option( EG_PUB_OPTION_LLMS ) ) {
 	add_action( 'init', function () {
 		if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK ) ) {
 			wp_schedule_event( time() + 60, 'hourly', EG_PUB_LLMS_HOOK );
 		}
 	} );
-	add_action( 'save_post', function ( $post_id, $post ) {
-		if ( wp_is_post_revision( $post_id ) || 'publish' !== $post->post_status ) {
+	// Entrada publicada, actualizada o retirada (borrador, papelera, privada): el llms.txt de Rank Math cambia.
+	add_action( 'transition_post_status', function ( $new_status, $old_status, $post ) {
+		if ( ( 'publish' !== $new_status && 'publish' !== $old_status ) || wp_is_post_revision( $post ) || 'nav_menu_item' === $post->post_type ) {
 			return;
 		}
-		if ( ! wp_next_scheduled( EG_PUB_LLMS_HOOK, array( 'save' ) ) ) {
-			wp_schedule_single_event( time() + 180, EG_PUB_LLMS_HOOK, array( 'save' ) );
-		}
-	}, 20, 2 );
+		eg_pub_llms_static_schedule_soon();
+	}, 20, 3 );
+	// Ajustes de Rank Math (opciones de llms.txt en General, nombre y descripción de la web en Títulos).
+	foreach ( array( 'rank-math-options-general', 'rank-math-options-titles', 'blogname', 'blogdescription' ) as $eg_llms_opt ) {
+		add_action( 'update_option_' . $eg_llms_opt, 'eg_pub_llms_static_schedule_soon' );
+	}
+	// Categorías y términos que Rank Math lista en el llms.txt.
+	add_action( 'created_term', 'eg_pub_llms_static_schedule_soon' );
+	add_action( 'edited_term', 'eg_pub_llms_static_schedule_soon' );
+	add_action( 'delete_term', 'eg_pub_llms_static_schedule_soon' );
 }
 
 function eg_pub_llms_static_state() {

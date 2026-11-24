@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.131.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- `/seo-tech ai_catalog`: el catálogo de agentes se sirve también en `/.well-known/ard.json` y se guarda como ficheros estáticos `.well-known/ard.json` y `.well-known/ai-catalog.json`. Lighthouse 13 prueba primero `ard.json` y solo espera 2 s por fichero; servido por WordPress tardaba unos 2 s y la auditoría «ard-schema» daba «No se ha podido cargar el archivo de catálogo». Con `apply` siempre rehace los ficheros (aunque el catálogo no cambie); `false` los borra si son nuestros (md5). El estado devuelve `ai_catalog_files`.
+- Gestión de la web (módulo `seo-tecnico`). Webs: hotelmiamicalella.com (navegación agéntica 3/4). Sirve en todas las webs con `ai_catalog`.
+
 ## 2.130.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/rocket add|remove` admite la lista `cdn_reject_files` («Excluir ficheros del CDN» de WP Rocket), p. ej. `["/wp-content/(.*).css"]`: el CSS que bloquea el renderizado se sirve desde el propio dominio, por la misma conexión que el HTML, en vez de abrir otra con el CDN antes de pintar.

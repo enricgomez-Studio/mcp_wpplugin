@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.134.0 · 24/11/2026 · PR (Claude, a petición de Enric)
+
+- Nuevo `/users` (módulo `usuarios`, tipología Gestión de la web): `list: true` lista usuarios y roles; `create: {login, email, first_name, last_name, role, notify}` con `apply: true` crea un usuario con contraseña aleatoria y, por defecto, le envía el correo estándar de WordPress para elegir contraseña. No crea administradores (rechaza roles con `manage_options`). Requiere que el autor configurado pueda `create_users`.
+- Webs: clubdelviatger.cat (usuario para el alumno de prácticas de marketing).
+
 ## 2.133.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/perf fixes listing_bg` pasa a `{"size": "large", "listings": [IDs de plantillas de listado]}` y solo actúa en esos listados. Con `true` actuaba en todos, también en un listado usado como slider a pantalla completa (portada de clubdelviatger.cat), donde la foto de 1024 px se veía borrosa. El formato anterior (`true` o un tamaño) ya no activa nada. El estado devuelve `listing_bg.listings`.

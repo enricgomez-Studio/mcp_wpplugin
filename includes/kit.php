@@ -298,12 +298,34 @@ function eg_pub_media_handle( WP_REST_Request $r ) {
 		if ( '' === $name ) {
 			$name = basename( (string) wp_parse_url( $url, PHP_URL_PATH ) );
 		}
+		// Desde la 2.102.0: optimize reduce y recomprime en el servidor (p. ej. un PNG de 2 MB de Drive) antes de guardarlo.
+		if ( ! empty( $item['optimize'] ) ) {
+			$opt = eg_pub_media_optimize( $tmp, is_array( $item['optimize'] ) ? $item['optimize'] : array() );
+			if ( is_wp_error( $opt ) ) {
+				@unlink( $tmp );
+				$out[] = $row + array( 'error' => $opt->get_error_message() );
+				continue;
+			}
+			$tmp  = $opt['path'];
+			$row['optimized'] = $opt['info'];
+			$base = '' !== $name ? preg_replace( '/\.[a-z0-9]+$/i', '', $name ) : ( $key ?: 'imagen' );
+			$name = $base . '.' . $opt['ext'];
+		}
 		// Desde la 2.59.0 también vídeo (mp4/webm) para fondos de cabecera; el resto cae en imagen.
 		if ( ! preg_match( '/\.(jpe?g|png|gif|webp|svg|avif|mp4|webm)$/i', $name ) ) {
 			$type = wp_get_image_mime( $tmp );
 			$name = ( $key ?: 'imagen' ) . '.' . ( $type ? str_replace( array( 'image/', 'jpeg' ), array( '', 'jpg' ), $type ) : 'jpg' );
 		}
+		// Desde la 2.103.0: skip_imagify evita que Imagify vuelva a comprimir una imagen ya optimizada (banners con texto que se pixelan).
+		$skip_imagify = ! empty( $item['skip_imagify'] );
+		if ( $skip_imagify ) {
+			add_filter( 'imagify_auto_optimize_attachment', '__return_false', 99 );
+		}
 		$id = media_handle_sideload( array( 'name' => $name, 'tmp_name' => $tmp ), 0, sanitize_text_field( (string) ( $item['title'] ?? '' ) ) ?: null );
+		if ( $skip_imagify ) {
+			remove_filter( 'imagify_auto_optimize_attachment', '__return_false', 99 );
+			$row['imagify'] = 'skipped';
+		}
 		if ( is_wp_error( $id ) ) {
 			@unlink( $tmp );
 			$out[] = $row + array( 'error' => $id->get_error_message() );
@@ -318,4 +340,42 @@ function eg_pub_media_handle( WP_REST_Request $r ) {
 		$out[] = $row + array( 'id' => (int) $id, 'src' => wp_get_attachment_url( $id ), 'existing' => false );
 	}
 	return new WP_REST_Response( array( 'ok' => true, 'items' => $out ), 200 );
+}
+
+/**
+ * Reduce y recomprime una imagen descargada antes de pasarla a la mediateca.
+ * Opciones: max_width (1920 por defecto), quality (82) y format (jpg o webp; jpg por defecto).
+ * Devuelve la ruta del fichero nuevo, su extensión y un resumen (tamaños antes y después).
+ */
+function eg_pub_media_optimize( $tmp, array $o ) {
+	$before = (int) @filesize( $tmp );
+	$editor = wp_get_image_editor( $tmp );
+	if ( is_wp_error( $editor ) ) {
+		return new WP_Error( 'eg_media_optimize', 'No se puede optimizar: ' . $editor->get_error_message() );
+	}
+	$max = max( 200, min( 4000, (int) ( $o['max_width'] ?? 1920 ) ) );
+	$q   = max( 40, min( 95, (int) ( $o['quality'] ?? 82 ) ) );
+	$fmt = 'webp' === strtolower( (string) ( $o['format'] ?? 'jpg' ) ) ? 'webp' : 'jpg';
+	$size = $editor->get_size();
+	if ( ! empty( $size['width'] ) && $size['width'] > $max ) {
+		$editor->resize( $max, null, false );
+	}
+	$editor->set_quality( $q );
+	$dest  = $tmp . '-opt.' . $fmt;
+	$saved = $editor->save( $dest, 'webp' === $fmt ? 'image/webp' : 'image/jpeg' );
+	if ( is_wp_error( $saved ) ) {
+		return new WP_Error( 'eg_media_optimize', 'No se puede optimizar: ' . $saved->get_error_message() );
+	}
+	@unlink( $tmp );
+	return array(
+		'path' => $saved['path'],
+		'ext'  => $fmt,
+		'info' => array(
+			'bytes_before' => $before,
+			'bytes_after'  => (int) @filesize( $saved['path'] ),
+			'width'        => (int) $saved['width'],
+			'height'       => (int) $saved['height'],
+			'quality'      => $q,
+		),
+	);
 }

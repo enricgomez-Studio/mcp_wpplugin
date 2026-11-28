@@ -379,10 +379,34 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 		$changes[] = 'meta.' . $key;
 	}
 
+	// --- Imágenes de Elementor ------------------------------------------------------
+	// Sustituye objetos de imagen en _elementor_data sin pasar por wp_update_post.
+	// Cada par: {old_id, new_id} o {old_url, new_id} (con partial:true para coincidencia parcial en la URL).
+	if ( ! empty( $p['elementor_images'] ) ) {
+		$elimg_pairs = array_values( (array) $p['elementor_images'] );
+		$raw         = get_post_meta( $post_id, '_elementor_data', true );
+		$eldata      = $raw ? json_decode( $raw, true ) : null;
+		if ( is_array( $eldata ) ) {
+			$elimg_count = 0;
+			$new_eldata  = eg_pub_item_elementor_images( $eldata, $elimg_pairs, $elimg_count );
+			if ( $elimg_count ) {
+				$changes[] = 'elementor_images:' . $elimg_count;
+				if ( ! $dry_run ) {
+					update_post_meta( $post_id, '_elementor_data', wp_slash( wp_json_encode( $new_eldata ) ) );
+				}
+			}
+		} else {
+			$notes[] = 'elementor_images: esta entrada no tiene _elementor_data o no es JSON válido.';
+		}
+	}
+
 	// Elementor pinta los campos dinámicos con su caché: que la regenere.
 	delete_post_meta( $post_id, '_elementor_element_cache' );
 	if ( function_exists( 'rocket_clean_post' ) ) {
 		rocket_clean_post( $post_id );
+	}
+	if ( ! empty( $p['elementor_images'] ) && class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
+		\Elementor\Plugin::$instance->files_manager->clear_cache();
 	}
 
 	return new WP_REST_Response( array(
@@ -390,6 +414,43 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 		'changes' => array_values( array_unique( $changes ) ),
 		'notes'   => $notes,
 	) + eg_pub_item_state( $post_id ), 200 );
+}
+
+/**
+ * Recorre el árbol de _elementor_data sustituyendo objetos de imagen.
+ * Un objeto imagen de Elementor tiene las claves «url» e «id» (entero > 0) directamente.
+ * Cada par admite: old_id (entero), old_url (URL exacta o parcial si partial=true) y new_id (obligatorio).
+ */
+function eg_pub_item_elementor_images( $node, $pairs, &$count ) {
+	if ( ! is_array( $node ) ) {
+		return $node;
+	}
+	if ( array_key_exists( 'url', $node ) && array_key_exists( 'id', $node ) && is_int( $node['id'] ) && $node['id'] > 0 ) {
+		foreach ( $pairs as $pair ) {
+			$match = false;
+			if ( ! empty( $pair['old_id'] ) && (int) $node['id'] === (int) $pair['old_id'] ) {
+				$match = true;
+			} elseif ( isset( $pair['old_url'] ) && '' !== (string) $pair['old_url'] ) {
+				$match = ! empty( $pair['partial'] )
+					? ( false !== strpos( (string) $node['url'], (string) $pair['old_url'] ) )
+					: ( (string) $node['url'] === (string) $pair['old_url'] );
+			}
+			if ( $match ) {
+				$new_id  = (int) $pair['new_id'];
+				$new_url = (string) wp_get_attachment_url( $new_id );
+				if ( $new_url ) {
+					$node['id']  = $new_id;
+					$node['url'] = $new_url;
+					++$count;
+				}
+				break;
+			}
+		}
+	}
+	foreach ( $node as $k => $v ) {
+		$node[ $k ] = eg_pub_item_elementor_images( $v, $pairs, $count );
+	}
+	return $node;
 }
 
 /**

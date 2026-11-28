@@ -10,6 +10,11 @@ Cambios ya fusionados en `main` que aún no tienen release (no han subido la ver
 
 - Nada por ahora.
 
+## 2.145.0 · 28/11/2026 · PR (Claude, a petición de Enric)
+
+- Un solo plugin «EG Studio» en Plugins. En las webs que siguen en la carpeta antigua salían dos («EG Studio» y «EG Studio (cargador antiguo)», a veces activos los dos): al final de la primera petición con esta versión, el plugin activo pasa a ser `<carpeta>/eg-studio.php` (también en multisitio y actualizaciones automáticas) y se borra el cargador `eg-publicacion.php`. No mueve la carpeta (ese paso sigue en pausa) ni toca clave, rutas o ajustes. Registro en la opción `eg_pub_loader_cleanup`.
+- Todas las webs.
+
 ## 2.144.0 · 24/11/2026 · PR (Claude, a petición de Enric)
 
 - `/seo-tech ga4_options: {"purchase": true, "exclude_logged": true}`: con la etiqueta de GA4 de EG Studio, manda el evento `purchase` de WooCommerce una sola vez por pedido en la página de pedido recibido (número, importe, IVA, envío y productos) y deja fuera a los usuarios conectados. Es lo que hacía Site Kit, para poder quitarlo.

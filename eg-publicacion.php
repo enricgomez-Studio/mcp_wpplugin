@@ -1,9 +1,10 @@
 <?php
 /**
- * Plugin Name:       EG Studio (cargador antiguo)
- * Description:       Archivo de compatibilidad de EG Studio. No lo desactives.
- * Version:           2.144.0
+ * Plugin Name:       EG Studio
+ * Description:       Gestión, mantenimiento y optimización de las webs de enricgomez Studio.
+ * Version:           2.145.0
  * Author:            enricgomez Studio
+ * Author URI:        https://www.enricgomez.com
  * Update URI:        https://github.com/enricgomez-Studio/mcp_wpplugin
  * License:           GPL-3.0-or-later
  *

@@ -201,7 +201,7 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 			return new WP_REST_Response( array( 'ok' => true, 'dry_run' => $dry_run, 'acf_new' => $acf_new ), 200 );
 		}
 	}
-	if ( $dry_run || ( ! $set && ! $acf && ! $meta && ! isset( $p['featured_image'] ) ) ) {
+	if ( $dry_run || ( ! $set && ! $acf && ! $meta && ! isset( $p['featured_image'] ) && empty( $p['elementor_images'] ) ) ) {
 		$state = eg_pub_item_state( $post_id );
 		if ( ! empty( $p['with_content'] ) ) {
 			// El contenido completo, tal cual (shortcodes de WPBakery incluidos), para preparar un /text exacto.
@@ -361,7 +361,7 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 			continue;
 		}
 		update_field( $field['key'], $value, $post_id );
-		$changes[] = 'acf.' . $field['name'];  
+		$changes[] = 'acf.' . $field['name'];
 	}
 
 	// --- Campos personalizados -----------------------------------------------------
@@ -405,7 +405,7 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 	if ( function_exists( 'rocket_clean_post' ) ) {
 		rocket_clean_post( $post_id );
 	}
-	if ( ! empty( $p['elementor_images'] ) && class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
+	if ( ! empty( $p['elementor_images'] ) && class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
 		\Elementor\Plugin::$instance->files_manager->clear_cache();
 	}
 

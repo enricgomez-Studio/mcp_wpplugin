@@ -193,3 +193,54 @@ add_action( 'admin_notices', function () {
 	echo '<div class="notice notice-warning"><p><strong>EG Studio:</strong> no se ha podido pasar el plugin a su carpeta nueva <code>eg-studio/</code>: '
 		. esc_html( $log['error'] ) . ' El plugin sigue funcionando igual desde <code>' . esc_html( dirname( EG_PUB_BASENAME ) ) . '/</code>; se reintenta cada hora.</p></div>';
 } );
+
+
+/*
+ * Un solo plugin «EG Studio» en Plugins (v2.145.0). En la carpeta antigua había dos archivos con cabecera: eg-studio.php
+ * y el cargador eg-publicacion.php, y WordPress listaba los dos (a veces activos los dos). Al final de la petición, sin
+ * mover la carpeta: el plugin activo pasa a ser <carpeta>/eg-studio.php (también en multisitio y en las actualizaciones
+ * automáticas) y se borra el cargador. La clave, los ajustes y las rutas no cambian. El paso de carpeta a eg-studio/
+ * sigue en pausa (arriba).
+ */
+function eg_pub_loader_cleanup() {
+	$folder = dirname( EG_PUB_BASENAME );
+	if ( '.' === $folder || '' === $folder ) {
+		return;
+	}
+	$dir    = wp_normalize_path( WP_PLUGIN_DIR ) . '/' . $folder;
+	$main   = $folder . '/eg-studio.php';
+	$loader = $folder . '/eg-publicacion.php';
+	if ( ! is_file( $dir . '/eg-studio.php' ) || ! is_file( $dir . '/eg-publicacion.php' ) ) {
+		return;
+	}
+	if ( '' === eg_pub_file_version( $dir . '/eg-studio.php' ) ) {
+		return; // eg-studio.php no es este plugin: no tocar nada.
+	}
+	eg_pub_switch_active( $loader, $main );
+	$active = (array) get_option( 'active_plugins', array() );
+	if ( ! in_array( $main, $active, true ) && ! ( is_multisite() && isset( get_site_option( 'active_sitewide_plugins', array() )[ $main ] ) ) ) {
+		return; // No ha quedado activo el archivo nuevo: mejor no borrar el cargador.
+	}
+	@unlink( $dir . '/eg-publicacion.php' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+	wp_clean_plugins_cache( false );
+	update_option( 'eg_pub_loader_cleanup', array( 'time' => time(), 'from' => $loader, 'to' => $main, 'version' => EG_PUB_VERSION ), false );
+}
+
+add_action( 'shutdown', function () {
+	if ( wp_installing() || defined( 'WP_INSTALLING' ) || get_option( 'core_updater.lock' ) || get_option( 'auto_updater.lock' ) ) {
+		return;
+	}
+	if ( eg_pub_needs_migration() ) {
+		return; // Si el paso de carpeta está activo en esta web, ya se encarga él.
+	}
+	$folder = dirname( EG_PUB_BASENAME );
+	if ( '.' === $folder || ! is_file( wp_normalize_path( WP_PLUGIN_DIR ) . '/' . $folder . '/eg-publicacion.php' ) ) {
+		return;
+	}
+	if ( ! eg_pub_migrate_lock() ) {
+		return;
+	}
+	eg_pub_loader_cleanup();
+	$GLOBALS['wpdb']->delete( $GLOBALS['wpdb']->options, array( 'option_name' => 'eg_pub_migrate_lock' ) );
+	wp_cache_delete( 'eg_pub_migrate_lock', 'options' );
+}, 98 );

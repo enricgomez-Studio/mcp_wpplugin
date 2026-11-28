@@ -46,6 +46,7 @@ function eg_pub_update_handle( WP_REST_Request $r ) {
 		} ) ) ),
 		'migrate'   => function_exists( 'eg_pub_migration_enabled' ) ? (bool) eg_pub_migration_enabled() : false,
 		'last_move' => get_option( 'eg_pub_folder_migration' ) ? get_option( 'eg_pub_folder_migration' ) : null,
+		'loader_cleanup' => get_option( 'eg_pub_loader_cleanup' ) ? get_option( 'eg_pub_loader_cleanup' ) : null,
 	);
 	if ( ! version_compare( $release['version'], EG_PUB_VERSION, '>' ) ) {
 		$out['message'] = 'Ya está en la última versión.';

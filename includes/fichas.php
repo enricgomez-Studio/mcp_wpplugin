@@ -405,7 +405,7 @@ function eg_pub_item_handle( WP_REST_Request $r ) {
 	if ( function_exists( 'rocket_clean_post' ) ) {
 		rocket_clean_post( $post_id );
 	}
-	if ( ! empty( $p['elementor_images'] ) && class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
+	if ( ! empty( $p['elementor_images'] ) && class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->files_manager ) ) {
 		\Elementor\Plugin::$instance->files_manager->clear_cache();
 	}
 
@@ -425,7 +425,7 @@ function eg_pub_item_elementor_images( $node, $pairs, &$count ) {
 	if ( ! is_array( $node ) ) {
 		return $node;
 	}
-	if ( array_key_exists( 'url', $node ) && array_key_exists( 'id', $node ) && is_int( $node['id'] ) && $node['id'] > 0 ) {
+	if ( array_key_exists( 'url', $node ) && array_key_exists( 'id', $node ) && ( is_int( $node['id'] ) || ( is_string( $node['id'] ) && ctype_digit( (string) $node['id'] ) ) ) && (int) $node['id'] > 0 ) {
 		foreach ( $pairs as $pair ) {
 			$match = false;
 			if ( ! empty( $pair['old_id'] ) && (int) $node['id'] === (int) $pair['old_id'] ) {

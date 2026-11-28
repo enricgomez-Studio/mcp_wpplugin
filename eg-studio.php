@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       EG Studio
- * Description:       Gestió, manteniment i optimització de les webs de enricgomez Studio.
- * Version:           2.146.1
+ * Description:       Gestión, mantenimiento y optimización de las webs de enricgomez Studio.
+ * Version:           2.146.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            enricgomez Studio
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const EG_PUB_VERSION = '2.146.1';
+const EG_PUB_VERSION = '2.146.2';
 const EG_PUB_REPO    = 'enricgomez-Studio/mcp_wpplugin';
 const EG_PUB_FOLDER  = 'eg-studio';
 const EG_PUB_MAIN    = 'eg-studio/eg-studio.php';
